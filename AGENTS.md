@@ -13,7 +13,7 @@ A solar-panel simulator for a house in Tandil, Argentina (37.3° S, 59.13° W, U
 ## Layout
 
 - `model.js`: sun position (`pvSun`, `pvEoT`), light on the panel (`pvAt`, `pvNow`), year totals (`pvYear`, `pvBest`, `pvShare`), the moving cloud field (`pvClouds`), tree shade, and the CSV reader and diagnosis (`pvParseCSV`, `pvDiagnose`).
-- `demo.js`: the SIMULAB `DEMO` contract (timeline, state, draw, bays, knobs). It also holds the left sidebar (`spSidebar`), tree dragging, the data panel (`spDataPanel`, `spDataBays`) and the free-mode clock (FECHA + HORA knobs).
+- `demo.js`: the SIMULAB `DEMO` contract (timeline, state, draw, bays, knobs). It also holds the left sidebar (`spSidebar`), tree dragging, the data panel (`spDataPanel`, `spDataBays`) and the free-mode clock (FECHA + HORA knobs). The guided timeline has 5 chapters (`SP_CH`) plus two more, Nubes and Inversor (`SPN`, `SPI`, `st.extra`). The video records only the canvas, so those two draw a copy of the sidebar with a cursor (`spMock`). If you change the real sidebar, update `spMock` to match.
 - `demo.json`: the title, the bundled files in order (`model.js`, `sim-data.js`, `demo.js`), and the note with sources and assumptions.
 - `simular-csv.mjs`: writes `data/*.csv`, `data/tandil-simulado-verdad.json` and `sim-data.js`.
 - `data/`: the test CSVs. `tandil-simulado-verdad.json` is the hidden truth: 25° tilt, 20° W, with a tree to the west-southwest.

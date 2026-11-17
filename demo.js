@@ -102,6 +102,11 @@ const SP_CH = [
   { id: 'techo', btn: 'Tu techo', lat: -37.3, tilt: 25, azi: 20, tip: ['25° y girado 20° al oeste:', 'errar un poco cuesta poco.'] },
 ]
 const SP_LEAD = 1.2, SP_DAYV = 2.6, SP_HOLD = 2.8, SP_SWEEP = SP_DAYV * PV_DAYS.length;
+// the two chapters on the real house: the config panel (clouds) and the inverter data
+const SP_NUBE_D = 11, SP_INV_D = 15;
+const SPN = { drag0: 1.6, drag1: 4.0, cloud: 0.6, out: SP_NUBE_D - 0.6 };
+const SPI = { load: 1.7, sweep0: 2.0, sweep1: 8.0, apply: 9.2, out: SP_INV_D - 0.6, n: 309, h0: 6.5, h1: 17.5, tilt0: 33, azi0: 0 };
+const SP_VTREE = { tree: 11, tx: -7, ty: -2.5 };   // the tree hidden in the simulated CSV (data/tandil-simulado-verdad.json)
 
 function spInsts() {
   return [
@@ -124,11 +129,11 @@ function spTimeline(params) {
   for (const lat of [-37.3]) for (const [n] of PV_DAYS) { const [h0, h1] = pvDay(lat, n); for (let k = 0; k <= 12; k++) sky.push(add3(pc, mul3(enuW(pvSun(lat, n, lerp(h0, h1, k / 12)), -1), R))); }
   const cam = fitCam([[-25, -25, 0], [25, 25, 0], [25, -25, 0], [-25, 25, 0], ...sky], 0.95);
   const base = { insts, byId, cam, kwp: params.kwp ?? 5.5, fecha: params.fecha ?? 321, hora: params.hora ?? 13, lat: params.lat ?? -37.3, tilt: params.tilt ?? 33, azi: params.azi ?? 0, lon: params.lon ?? -59.1, utc: params.utc ?? -3, cloud: params.cloud ?? 0, tree: params.tree ?? 10, tx: params.tx ?? -3, ty: params.ty ?? 7 };
-  if (params.live) return Object.assign(base, { T: { end: 1800, caption: null, labelsOut: 0 }, sched: {}, total: insts.length, CH: [], live: true, tabs: [], tabAt: () => 0 });
+  if (params.live) return Object.assign(base, { T: { end: 1800, caption: null, labelsOut: 0, nube0: Infinity, inv0: Infinity, segEnd: -1 }, sched: {}, total: insts.length, CH: [], live: true, tabs: [], tabAt: () => 0 });
   const { sched, end, total } = scheduleBuild(insts, 0.35);
   let t = end + 0.6;
   const CH = SP_CH.map(c => { const o = Object.assign({}, c, { t0: t, share: pvShare(c.lat, c.tilt, c.azi) }); t += SP_LEAD + SP_SWEEP + SP_HOLD; o.t1 = t; return o; });
-  const T = { buildEnd: end, caption: t + 0.2 }; T.end = T.caption + 4.6; T.labelsOut = CH[0].t0 + 0.4;
+  const T = { buildEnd: end, nube0: t, inv0: t + SP_NUBE_D, segEnd: t + SP_NUBE_D + SP_INV_D }; t = T.segEnd; T.caption = t + 0.2; T.end = T.caption + 4.6; T.labelsOut = CH[0].t0 + 0.4;
   return Object.assign(base, { T, sched, total, CH, live: false, tabs: [], tabAt: () => 0 });
 }
 function spChapter(TL, t) { for (let k = TL.CH.length - 1; k >= 0; k--) if (t >= TL.CH[k].t0) return k; return -1; }
@@ -146,6 +151,18 @@ function spState(TL, t) {
     const n = ((n0 - 1 + Math.floor(tot / 24)) % 365 + 365) % 365 + 1, clock = ((tot % 24) + 24) % 24;
     const solar = clock + (4 * (lon - 15 * utc) + pvEoT(n)) / 60;
     st.free = { n, h: solar, clock, k: PV_DAYS.findIndex(d => d[0] === n), f: 0 };
+  } else if (t >= TL.T.nube0 && t < TL.T.segEnd) {
+    // chapters 6 and 7: a fixed day, the clock moves; the year stats stay on a clear sky (env), the scene gets envX
+    const inv = t >= TL.T.inv0, e = t - (inv ? TL.T.inv0 : TL.T.nube0); k = TL.CH.length - 1; lat = -37.3;
+    let n, clock;
+    if (!inv) { tilt = 25; azi = 20; n = SPI.n; clock = lerp(11, 13, e / SP_NUBE_D); st.envX = { cloud: SPN.cloud * easeInOut(seg(e, SPN.drag0, SPN.drag1)) * (1 - easeInOut(seg(e, SPN.out - 0.4, SP_NUBE_D))) }; }
+    else {
+      const d = spDiag({ lat, lon, utc }, spVData()), f = easeInOut(seg(e, SPI.apply + 0.1, SPI.apply + 1.3));
+      tilt = lerp(SPI.tilt0, d.tilt, f); azi = lerp(SPI.azi0, d.azi, f); n = SPI.n; clock = lerp(SPI.h0, SPI.h1, easeInOut(seg(e, SPI.sweep0, SPI.sweep1)));
+      st.envX = Object.assign({}, SP_VTREE, { tree: SP_VTREE.tree * easeOut(seg(e, 0.1, 1.0)) || 0 }); st.dataOn = e >= SPI.load; st.diag = d;
+    }
+    st.extra = inv ? 'inv' : 'nube'; st.eu = e;
+    st.free = { n, h: clock + (4 * (lon - 15 * utc) + pvEoT(n)) / 60, clock, k: -1, f: 0 };
   } else {
     k = spChapter(TL, t); ch = TL.CH[k];
     if (!ch) { const c0 = TL.CH[0]; lat = c0.lat; tilt = c0.tilt; azi = c0.azi; }
@@ -156,12 +173,12 @@ function spState(TL, t) {
     }
   }
   st.lat = lat; st.tilt = tilt; st.azi = azi; st.env = env; st.lon = lon; st.utc = utc; st.hemi = lat >= 0 ? 1 : -1; st.k = k; st.ch = ch; st.u = u;
-  st.sweep = TL.live ? st.free : v >= 0 ? spSweep(lat, v) : null;
+  st.sweep = st.free ? st.free : v >= 0 ? spSweep(lat, v) : null;
   // envNow follows the tree while it is being dragged; the year numbers wait for the drop (env)
-  const envNow = SP_DRAG ? Object.assign({}, env, SP_DRAG) : env; st.envNow = envNow;
+  const envNow = SP_DRAG || st.envX ? Object.assign({}, env, st.envX, SP_DRAG) : env; st.envNow = envNow;
   st.now = st.sweep ? pvNow(lat, tilt, azi, st.sweep.n, st.sweep.h, envNow, t) : null;
   const h = st.hemi;
-  st.cloudsW = env.cloud > 0 ? pvClouds(env.cloud, t).map(cl => ({ c: spM2W(cl.c, h), r: cl.r / SP_U })) : [];
+  st.cloudsW = envNow.cloud > 0 ? pvClouds(envNow.cloud, t).map(cl => ({ c: spM2W(cl.c, h), r: cl.r / SP_U })) : [];
   if (envNow.tree) { const T = pvTreeCrown(envNow.tree, envNow.tx, envNow.ty); st.treeW = { base: spM2W([T.c[0], T.c[1], 0], h), crown: spM2W(T.c, h), r: T.r / SP_U }; }
   // shadows: the real sun while it is up (fading at the horizon); a mid-morning sun between chapters
   if (st.now && st.now.up > 0) st.shadow = { d: enuW(st.now.s, h), a: clamp(st.now.up / 0.12) };
@@ -170,7 +187,7 @@ function spState(TL, t) {
     st.shadow = { d: enuW(pvSun(lat, 80, 10.5), h), a };
   }
   st.share = pvShare(lat, Math.round(tilt), Math.round(azi), env);
-  st.done = TL.live ? true : ch && u >= SP_LEAD + SP_SWEEP;
+  st.done = TL.live || st.extra ? true : ch && u >= SP_LEAD + SP_SWEEP;
   st.cam = TL.cam; SP_LAST = st;
   return st;
 }
@@ -200,18 +217,23 @@ function spSyncKnobs(st) {
 // ---- inverter data: load, diagnose, compare (model.js pvParseCSV / pvDiagnose) ----------------------------------
 const SP_PR = 0.86;   // expected losses besides heat: wiring, inverter, mismatch (assumption)
 let SP_DATA = null, SP_BOX = null;
-function spLoadCSV(text, name) {
+function spMakeData(text, name) {
   const rows = pvParseCSV(text), byN = {};
   for (const r of rows) (byN[r.n] = byN[r.n] || []).push(r);
-  SP_DATA = { name, rows, byN, diag: null, siteKey: '' };
+  return { name, rows, byN, diag: null, siteKey: '' };
+}
+let SP_VDATA = null;   // the simulated CSV as the guided video shows it
+const spVData = () => SP_VDATA || (SP_VDATA = spMakeData(SP_SIM_CSV, 'tandil-simulado-2026-11.csv'));
+function spLoadCSV(text, name) {
+  SP_DATA = spMakeData(text, name); const rows = SP_DATA.rows;
   spDataStatus();
   const st = SP_LAST;
   if (st) { spDiag(st); const d = SP_DATA.diag, first = d.clearDays[0]; const n = rows.find(r => `${r.y}-${r.mo}-${r.d}` === first).n; liveSet('fecha', n); }
 }
 // diagnosis for the current site; runs again only when latitude, longitude or time zone change
-function spDiag(st) {
-  const key = `${st.lat}|${st.lon}|${st.utc}`; if (SP_DATA.siteKey === key) return SP_DATA.diag;
-  SP_DATA.siteKey = key; SP_DATA.diag = pvDiagnose(SP_DATA.rows, { lat: st.lat, lon: st.lon, utc: st.utc }); spDataStatus(); return SP_DATA.diag;
+function spDiag(st, D = SP_DATA) {
+  const key = `${st.lat}|${st.lon}|${st.utc}`; if (D.siteKey === key) return D.diag;
+  D.siteKey = key; D.diag = pvDiagnose(D.rows, { lat: st.lat, lon: st.lon, utc: st.utc }); if (D === SP_DATA) spDataStatus(); return D.diag;
 }
 // expected kW for a clock time: clear sky, the scene's tree, heat loss, installed kWp and losses
 function spExpected(st, n, clock) {
@@ -220,8 +242,8 @@ function spExpected(st, n, clock) {
 }
 const spDeg = (a) => a === 0 ? '0°' : `${Math.abs(a)}° ${a > 0 ? 'O' : 'E'}`;
 const spWin = (w) => `${spHour(w[0])}-${spHour(w[1])}`;
-function spDataBays(c, st) {
-  const D = SP_DATA, d = spDiag(st), n = st.sweep.n, day = D.byN[n] || [];
+function spDataBays(c, st, D = SP_DATA) {
+  const d = spDiag(st, D), n = st.sweep.n, day = D.byN[n] || [];
   // BAY 03 · real vs expected for the day shown
   let real = 0, exp = 0; const pts = day.map(r => { const e = spExpected(st, n, r.clock); real += r.p * 5 / 60; exp += e * 5 / 60; return [r.clock, r.p, e]; });
   const ratio = exp > 0 ? real / exp : 0;
@@ -278,6 +300,65 @@ function spDataPanel(box) {
   };
   $('dataclear').onclick = () => { SP_DATA = null; spDataStatus(); };
   SP_BOX = w; spDataStatus();
+}
+// a drawn copy of the left sidebar (the real one is HTML and is not in the video), with a cursor that uses it
+function spMock(c, st) {
+  const e = st.eu, nube = st.extra === 'nube', D = nube ? SP_NUBE_D : SP_INV_D;
+  const a = easeOut(seg(e, 0, 0.5)) * (1 - easeInOut(seg(e, D - 0.6, D - 0.1))); if (a <= 0) return;
+  const x = CARD.x + 30 - (1 - a) * 40, w = 330, y0 = 262, px = x + 20, pw = w - 40;
+  const LIME = '#c8f04a', TXT = '#e8eaee', DIM = '#8b909a', BG = '#16181d';
+  const rows = [], targets = {};
+  let y = y0 + 56;
+  const head = (t) => { rows.push(['h', t, y]); y += 30; };
+  const slider = (key, label, f, val) => { rows.push(['s', label, y, f, val]); targets[key] = [px + pw * f, y + 26]; y += 64; };
+  const button = (key, label, on, hot) => { rows.push(['b', label, y, on, hot]); targets[key] = [px + 14 + Math.min(pw - 28, label.length * 10.5 + 20) / 2, y + 17]; y += 46; };
+  const text = (t, bold) => { rows.push(['t', t, y, bold]); y += 20; };
+  head('PANEL');
+  slider('tilt', 'INCLINACIÓN', st.tilt / 90, `${Math.round(st.tilt)}°`);
+  slider('azi', 'GIRO', (st.azi + 180) / 360, Math.round(st.azi) ? `${Math.abs(Math.round(st.azi))}° al ${st.azi > 0 ? 'oeste' : 'este'}` : '0° · al ecuador');
+  if (nube) {
+    head('ENTORNO');
+    const C = st.envNow.cloud || 0;
+    slider('cloud', 'NUBES', C, C ? `${Math.round(C * 100)} % del cielo` : 'cielo limpio');
+    slider('tree', 'ÁRBOL', 0, 'sin árbol');
+  } else {
+    head('DATOS DEL INVERSOR');
+    button('imp', 'Importar CSV…', true, false);
+    button('sim', 'Cargar CSV simulado', true, Math.abs(e - SPI.load) < 0.2);
+    if (st.dataOn) { const d = st.diag; text('tandil-simulado-2026-11.csv', true); text('2702 filas · 14 días'); text(`Orientación estimada: ${d.tilt}° · ${spDeg(d.azi)}`, true); text(`Sombra fija: ${d.shade.map(spWin).join(', ')}`); y += 8; }
+    button('apply', 'Usar orientación estimada', st.dataOn, Math.abs(e - SPI.apply) < 0.2);
+  }
+  const h = y - y0 + 6;
+  c.save(); c.globalAlpha = a;
+  c.fillStyle = 'rgba(29,32,51,0.25)'; rr(c, x + 5, y0 + 6, w, h, 16); c.fill();
+  c.fillStyle = BG; rr(c, x, y0, w, h, 16); c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
+  c.font = `700 15px ${FONT_MONO}`; c.letterSpacing = '1px'; c.fillStyle = TXT; c.textBaseline = 'middle'; c.fillText('⚙ CONFIGURACIÓN', px, y0 + 28);
+  c.letterSpacing = '0px';
+  for (const r of rows) {
+    if (r[0] === 'h') { c.font = `700 13px ${FONT_MONO}`; c.fillStyle = LIME; c.fillText(r[1], px, r[2] + 10); }
+    else if (r[0] === 's') {
+      const [, label, yy, f, val] = r, ty = yy + 26;
+      c.font = `400 12px ${FONT_MONO}`; c.fillStyle = DIM; c.fillText(label, px, yy + 8);
+      c.fillStyle = '#3a3e47'; rr(c, px, ty - 3, pw, 6, 3); c.fill(); c.fillStyle = LIME; rr(c, px, ty - 3, pw * clamp(f), 6, 3); c.fill();
+      c.beginPath(); c.arc(px + pw * clamp(f), ty, 8, 0, Math.PI * 2); c.fill();
+      c.font = `400 12.5px ${FONT_MONO}`; c.fillStyle = LIME; c.textAlign = 'right'; c.fillText(val, px + pw, ty + 22); c.textAlign = 'left';
+    } else if (r[0] === 'b') {
+      const [, label, yy, on, hot] = r, bw = Math.min(pw, label.length * 10.5 + 28);
+      c.globalAlpha = a * (on ? 1 : 0.4); c.fillStyle = hot ? LIME : '#2a2d34'; rr(c, px, yy, bw, 34, 17); c.fill();
+      c.font = `700 13px ${FONT_MONO}`; c.fillStyle = hot ? INK : TXT; c.fillText(label, px + 14, yy + 17); c.globalAlpha = a;
+    } else { c.font = `${r[3] ? 700 : 400} 12px ${FONT_MONO}`; c.fillStyle = r[3] ? TXT : DIM; c.fillText(r[1], px, r[2] + 8); }
+  }
+  // cursor: keyframes [time, target]; it follows the slider knob while dragging
+  const off = [x + w + 60, y0 + h + 40];
+  const keys = nube ? [[0.5, off], [1.4, targets.cloud], [SPN.drag1 + 0.6, targets.cloud], [SPN.out, off]]
+    : [[0.5, off], [1.4, targets.sim], [SPI.load + 0.6, targets.sim], [SPI.load + 1.4, off], [SPI.apply - 1.0, off], [SPI.apply - 0.1, targets.apply], [SPI.apply + 0.8, targets.apply], [SPI.out, off]];
+  let cp = keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) if (e >= keys[i][0]) { const f = easeInOut(seg(e, keys[i][0], keys[i + 1][0])); cp = [lerp(keys[i][1][0], keys[i + 1][1][0], f), lerp(keys[i][1][1], keys[i + 1][1][1], f)]; }
+  const clicks = nube ? [SPN.drag0] : [SPI.load, SPI.apply];
+  for (const t0 of clicks) { const q = seg(e, t0, t0 + 0.45); if (q > 0 && q < 1) { c.strokeStyle = LIME; c.lineWidth = 3; c.globalAlpha = a * (1 - q); c.beginPath(); c.arc(cp[0], cp[1], 8 + 22 * q, 0, Math.PI * 2); c.stroke(); c.globalAlpha = a; } }
+  c.translate(cp[0], cp[1]); c.beginPath(); [[0, 0], [0, 24], [6, 18], [11, 28], [15, 26], [10, 16], [18, 16]].forEach(([u, v], i) => i ? c.lineTo(u, v) : c.moveTo(u, v)); c.closePath();
+  c.fillStyle = '#ffffff'; c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
+  c.restore();
 }
 const SP_RC = { coral: '#ff9e93', amber: '#ffcf6b', lime: '#c8f04a' };
 const spHour = (h) => { const m = Math.round(h * 60); return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; };
@@ -482,7 +563,7 @@ const DEMO = {
   live: { label: 'Modo libre', controls: [] },
   timeline: (p) => spTimeline(p || {}),
   // chapter buttons always come from the guided timeline, even while the free mode is on
-  steps: (TL) => { const V = TL.live ? spTimeline({}) : TL; return [['0 · Armar', 0], ...V.CH.map((c, i) => [`${i + 1} · ${c.btn}`, c.t0 - 0.05])]; },
+  steps: (TL) => { const V = TL.live ? spTimeline({}) : TL; return [['0 · Armar', 0], ...V.CH.map((c, i) => [`${i + 1} · ${c.btn}`, c.t0 - 0.05]), ['6 · Nubes', V.T.nube0], ['7 · Inversor', V.T.inv0]]; },
   state: (TL, t) => spState(TL, t),
   drawScene(G, st, TL) {
     drawTapete(G, st, { x0: -25, x1: 25, y0: -25, y1: 25 });
@@ -510,7 +591,7 @@ const DEMO = {
       const m = pts[0][1] < pts[pts.length - 1][1] ? pts[0] : pts[pts.length - 1];
       if (!st.sweep || cur) pill(c, m[0] + 38, m[1] - 8, PV_DAYS[i][1], { align: 'left', valign: 'middle', size: 10.5, padY: 3, padX: 6, shadow: false, lw: 1.2, bg: cur ? '#ffcf6b' : '#fffdf8', alpha: cur ? 1 : 0.85 });
     });
-    if (TL.live && st.sweep.k < 0) {
+    if (st.sweep && st.sweep.k < 0) {
       const n = st.sweep.n, [h0, h1] = pvDay(st.lat, n), pts = [];
       for (let k = 0; k <= 48; k++) { const s = pvSun(st.lat, n, lerp(h0, h1, k / 48)); if (s[2] >= -0.01) pts.push(P(sunW(s))); }
       if (pts.length > 1) { c.save(); c.beginPath(); pts.forEach((p, j) => j ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.lineWidth = 2.4; c.strokeStyle = '#e8590c'; c.stroke(); c.restore();
@@ -521,6 +602,7 @@ const DEMO = {
     if (st.now && st.now.up > 0) spSunRay(G, st, sunW, pc);
     if (st.cloudsW && st.cloudsW.length) spCloudsDraw(G, st);
   },
+  drawOverCard(c, st, TL) { if (st.extra) spMock(c, st); },
   labelAlpha(TL, inst, t) { return TL.live ? 0 : labelAlphaDefault(TL, inst, t); },
   drawNotes(G, st, TL) {
     const c = G.ctx, P = (p) => G.cam.p(p), ch = st.ch, u = st.u, now = st.now;
@@ -530,6 +612,14 @@ const DEMO = {
       const pan = spPanel(st), A = P(add3(SP.pc, mul3(pan.n, 9)));
       const th = Math.round(now.theta), txt = now.shade > 0.5 ? `θ = ${th}° · LO TAPA EL ÁRBOL` : (now.cloudB || 0) > 0.5 ? `θ = ${th}° · PASA UNA NUBE` : now.shade + (now.cloudB || 0) > 0 ? `θ = ${th}° · SOMBRA PARCIAL` : now.cos <= 0 ? `θ = ${th}° · NO LE PEGA` : `θ = ${th}° · ${Math.round(now.cos * 100)} % DEL RAYO`;
       callout(c, A, -150, -40, txt, 1, now.shade + (now.cloudB || 0) > 0 ? '#ff9e93' : now.cos > 0.9 ? '#c8f04a' : now.cos > 0.5 ? '#ffcf6b' : '#ff9e93');
+    }
+    if (st.extra) {
+      const e = st.eu, D = st.extra === 'nube' ? SP_NUBE_D : SP_INV_D, a = seg(e, 0.1, 0.4) * (1 - seg(e, D - 0.35, D - 0.05));
+      const tip = st.extra === 'nube' ? ['Nubes: su sombra viaja con el viento', 'y baja la potencia cuando pasa por el panel.']
+        : e < SPI.load ? ['Esto midió tu inversor en noviembre.', '¿Cómo está montado de verdad el panel?']
+        : e < SPI.apply ? ['Azul: lo real. Naranja: lo teórico', `para ${SPI.tilt0}° al norte. No coinciden.`]
+        : [`Los datos dicen ${st.diag.tilt}° y ${spDeg(st.diag.azi).replace(' O', ' al oeste')},`, `y un árbol que tapa de ${st.diag.shade.map(spWin).join(', ')}.`];
+      tipCard(c, CARD.x + 30, 146, tip, a, st.extra === 'nube' ? 'PANEL DE CONFIGURACIÓN' : 'DATOS DEL INVERSOR');
     }
     if (ch && !cap) {
       tipCard(c, CARD.x + 30, 146, ch.tip, fade(0.3, dur - 0.05), `${spCity(ch.lat)} · ${spLat(ch.lat)} · ${ch.tilt}° · ${spDir(ch.lat, ch.azi)}`);
@@ -561,7 +651,7 @@ const DEMO = {
     c.font = `400 11px ${FONT_MONO}`; c.fillStyle = '#6b6f7a'; c.fillText(`cos θ = ${cs.toFixed(2)} → capta ${Math.round(cs * 100)} % del rayo directo`, gx, gy + 44);
     c.restore();
     // BAY 02 · sunlight on the panel now + the day curve
-    b = bayFrame(c, 1, 'BAY 02 · LUZ EN EL PANEL', sw ? (TL.live ? `${spDate(sw.n).toUpperCase()} · ${spHour(sw.clock)}` : `${PV_DAYS[sw.k][1]} · ${spHour(sw.h)}`) : '--', sw ? BAY_BG.cyan : BAY_BG.grey);
+    b = bayFrame(c, 1, 'BAY 02 · LUZ EN EL PANEL', sw ? (sw.k < 0 ? `${spDate(sw.n).toUpperCase()} · ${spHour(sw.clock)}` : `${PV_DAYS[sw.k][1]} · ${spHour(sw.h)}`) : '--', sw ? BAY_BG.cyan : BAY_BG.grey);
     bigValue(c, b, now ? String(Math.round(now.poa * 1000)) : '0', 'W/m²', sw ? `solar ${spHour(sw.h)} · reloj ${spHour(pvClock(sw.h, sw.n, st.lon, st.utc))}` : 'directa + difusa + reflejada');
     chartBox(c, b);
     if (sw) {
@@ -575,6 +665,7 @@ const DEMO = {
       pill(c, b.cx + b.cw - 6, b.cy + 6, `- - mejor ${best}°`, { align: 'right', bg: '#fffdf8', size: 9, padY: 3, padX: 6, ls: 0.5, shadow: false, lw: 1 });
     }
     if (TL.live && SP_DATA) { spDataBays(c, st); return; }
+    if (st.dataOn) { spDataBays(c, st, spVData()); return; }
     // BAY 03 · the three days, kWh/m², against the best tilt
     b = bayFrame(c, 2, 'BAY 03 · ENERGÍA POR DÍA', 'kWh/m² · día', BAY_BG.grey);
     c.save();
@@ -613,6 +704,8 @@ const DEMO = {
   },
   speedBadge(TL, st) {
     if (TL.live) return playing ? { txt: `▶ ${SP_RATE} h POR SEGUNDO`, bg: BAY_BG.coral } : { txt: '❚❚ EN PAUSA', bg: BAY_BG.lime };
+    if (st.extra === 'nube') return { txt: `NUBES ${Math.round(st.envNow.cloud * 100)} % · SOMBRA EN VIVO`, bg: BAY_BG.cyan };
+    if (st.extra === 'inv') return st.eu < SPI.load ? { txt: 'DATOS DEL INVERSOR', bg: BAY_BG.cyan } : st.eu < SPI.apply + 1.3 ? { txt: 'NO COINCIDE', bg: BAY_BG.amber } : { txt: 'COINCIDE', bg: BAY_BG.lime };
     if (!st.ch) return st.placedCount < TL.total ? { txt: 'ARMANDO', bg: BAY_BG.amber } : { txt: 'LISTO', bg: BAY_BG.lime };
     if (st.t >= TL.T.caption) return { txt: '5 POSICIONES · 1 REGLA', bg: BAY_BG.lime };
     if (st.sweep) return { txt: '1 DÍA = 2.6 s · ADELANTADO', bg: BAY_BG.coral };
@@ -629,6 +722,12 @@ const DEMO = {
       cu.push({ type: 'whir', t: a, t1: b, f: 140, gain: 0.03 });
       cu.push({ type: pvVeredicto(ch.share)[2] === 'lime' ? 'ding' : 'error', t: b + 0.1 });
     }
+    const N0 = TL.T.nube0, I0 = TL.T.inv0;
+    cu.push({ type: 'whoosh', t: N0, t1: N0 + 0.6 });
+    for (let x = SPN.drag0; x < SPN.drag1; x += 0.3) cu.push({ type: 'detent', t: N0 + x });
+    cu.push({ type: 'whoosh', t: N0 + SPN.out, t1: N0 + SP_NUBE_D }, { type: 'whoosh', t: I0, t1: I0 + 0.6 });
+    cu.push({ type: 'blip', t: I0 + SPI.load, f: 880 }, { type: 'whir', t: I0 + SPI.sweep0, t1: I0 + SPI.sweep1, f: 140, gain: 0.03 });
+    cu.push({ type: 'blip', t: I0 + SPI.apply, f: 990 }, { type: 'ding', t: I0 + SPI.apply + 1.4 }, { type: 'whoosh', t: I0 + SPI.out, t1: I0 + SP_INV_D });
     cu.push({ type: 'whoosh', t: TL.T.caption - 0.3, t1: TL.T.caption + 0.9 }, { type: 'caption', t: TL.T.caption });
     return cu;
   },

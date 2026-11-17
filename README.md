@@ -11,7 +11,7 @@ Es un solo archivo, `index.html`, y funciona sin internet.
 - **Modo libre.** Elige fecha, hora, latitud, longitud, inclinación, giro, nubes y árbol desde el panel izquierdo. La app arranca en pausa; ▶ hace avanzar la hora y ❚❚ la congela. Mover una perilla no pone la animación en Play.
 - **Árbol arrastrable.** Su sombra sigue al sol y baja la potencia cuando tapa el panel.
 - **Nubes que viajan con el viento** y proyectan sombra sobre el suelo, el techo y el panel.
-- **Video guiado** en los botones de abajo: plano, vertical, al sur, ángulo justo y tu techo.
+- **Video guiado** en los botones de abajo: plano, vertical, al sur, ángulo justo y tu techo. Después, *Nubes* muestra cómo se usa el panel de configuración, e *Inversor* carga el CSV simulado y corrige la orientación con el diagnóstico.
 - **Datos del inversor.** *Importar CSV…* o *Cargar CSV simulado* dibuja la curva real contra la teórica y estima la inclinación, el giro y las horas de sombra fija.
 
 ## Formato del CSV
