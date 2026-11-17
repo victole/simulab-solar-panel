@@ -1,0 +1,98 @@
+{
+  "aviso": "DATOS SIMULADOS, no son de un inversor real",
+  "sitio": {
+    "lat": -37.3,
+    "lon": -59.13,
+    "utc": -3
+  },
+  "planta": {
+    "kWp": 5.5,
+    "acMax": 5,
+    "pr": 0.86,
+    "gamma": -0.0035,
+    "tAmb": 18,
+    "kT": 25
+  },
+  "verdad": {
+    "tilt": 25,
+    "azi": 20,
+    "soiling": 0.06,
+    "tree": {
+      "height_m": 11,
+      "east_m": -7,
+      "north_m": -2.5
+    }
+  },
+  "dias": [
+    {
+      "fecha": "2026-11-01",
+      "nubes": 0.2,
+      "kWh": 25.9
+    },
+    {
+      "fecha": "2026-11-02",
+      "nubes": 0.1,
+      "kWh": 28.76
+    },
+    {
+      "fecha": "2026-11-03",
+      "nubes": 0.5,
+      "kWh": 15.77
+    },
+    {
+      "fecha": "2026-11-04",
+      "nubes": 0.3,
+      "kWh": 20.36
+    },
+    {
+      "fecha": "2026-11-05",
+      "nubes": 0,
+      "kWh": 31.54
+    },
+    {
+      "fecha": "2026-11-06",
+      "nubes": 0,
+      "kWh": 31.57
+    },
+    {
+      "fecha": "2026-11-07",
+      "nubes": 0.5,
+      "kWh": 15.87
+    },
+    {
+      "fecha": "2026-11-08",
+      "nubes": 0.7,
+      "kWh": 9.19
+    },
+    {
+      "fecha": "2026-11-09",
+      "nubes": 0.1,
+      "kWh": 28.69
+    },
+    {
+      "fecha": "2026-11-10",
+      "nubes": 0,
+      "kWh": 31.7
+    },
+    {
+      "fecha": "2026-11-11",
+      "nubes": 0,
+      "kWh": 31.74
+    },
+    {
+      "fecha": "2026-11-12",
+      "nubes": 0.3,
+      "kWh": 20.7
+    },
+    {
+      "fecha": "2026-11-13",
+      "nubes": 0.2,
+      "kWh": 24.39
+    },
+    {
+      "fecha": "2026-11-14",
+      "nubes": 0,
+      "kWh": 31.83
+    }
+  ]
+}
