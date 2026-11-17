@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Lab 05 · Panel solar. Clear-sky sunlight on a tilted panel at latitude `lat`, tilt `tilt` and
+// Panel solar. Clear-sky sunlight on a tilted panel at latitude `lat`, tilt `tilt` and
 // `azi` (degrees turned away from the equator: 0 = facing the equator, 180 = facing the pole).
 // Data and assumptions: demo.json note.
 // ---------------------------------------------------------------------------

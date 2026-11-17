@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Lab 05 · PANEL SOLAR. Same house, same panel, five ways to point it: flat, vertical, facing the pole,
+// PANEL SOLAR. Same house, same panel, five ways to point it: flat, vertical, facing the pole,
 // facing the equator at the right tilt, and the same rule in another city. Then the viewer drives it:
 // knobs = latitude, longitude, UTC, tilt, orientation, clouds, tree; D = restart the 3-day sweep. Model: model.js, data: demo.json note.
 // ---------------------------------------------------------------------------
@@ -461,10 +461,10 @@ if (typeof window !== 'undefined' && !new URLSearchParams(location.search).has('
 
 const DEMO = {
   id: 'PANEL', num: '05', title: 'PANEL SOLAR', tagline: 'ORIENTA · INCLINA · COSECHA', category: 'ENERGÍA', brand: 'SIMULAB',
-  plate: ['SIMULAB · PANEL SOLAR · LAB 05', 'Lab 05 · hacia dónde y cuánto inclinar tu panel en Tandil'],
-  chips: ['SOL CALCULADO · 3 DÍAS CLAVE · AÑO COMPLETO', 'LAB 05 · ENERGÍA'],
+  plate: ['SIMULAB · PANEL SOLAR', 'hacia dónde y cuánto inclinar tu panel en Tandil'],
+  chips: ['SOL CALCULADO · 3 DÍAS CLAVE · AÑO COMPLETO', 'ENERGÍA'],
   caption: 'Apunta al ecuador e inclínalo casi tu latitud.',
-  intro: { seconds: 5, lines: ['¿Hacia dónde y cuánto se inclina', 'tu panel solar?'], pill: 'LAB 05 · PANEL SOLAR' },
+  intro: { seconds: 5, lines: ['¿Hacia dónde y cuánto se inclina', 'tu panel solar?'], pill: 'PANEL SOLAR' },
   major: ['casa', 'pan'],
   params: { kwp: 5.5, fecha: 321, hora: 13, lat: -37.3, lon: -59.1, utc: -3, tilt: 33, azi: 0, cloud: 30, tree: 10, tx: -3, ty: 7 },
   knobs: [

@@ -1,6 +1,6 @@
 .DS_Store
 node_modules/
 .vercel/
-labs/*/render/
-labs/*/dist/
-labs/*/shots/
+render/
+dist/
+shots/

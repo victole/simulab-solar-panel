@@ -29,19 +29,21 @@ Son **datos simulados**, no vienen de un inversor real.
 ## Desarrollo
 
 ```
-labs/lab05-panel-solar/
-  model.js          modelo puro: sol, luz, nubes, árbol, CSV y diagnóstico
-  demo.js           escena, paneles, controles y panel lateral
-  demo.json         título y nota con fuentes y supuestos
-  sim-data.js       el CSV simulado incluido en la app (generado)
-  simular-csv.mjs   genera data/*.csv, data/*.json y sim-data.js
-  check.mjs         comprobaciones rápidas del modelo
+index.html        la app armada (lo que se publica)
+model.js          modelo puro: sol, luz, nubes, árbol, CSV y diagnóstico
+demo.js           escena, paneles, controles y panel lateral
+demo.json         título y nota con fuentes y supuestos
+sim-data.js       el CSV simulado incluido en la app (generado)
+simular-csv.mjs   genera data/*.csv, data/*.json y sim-data.js
+check.mjs         comprobaciones rápidas del modelo
+build.sh          arma index.html
+data/             CSV de prueba
 ```
 
 ```sh
-./build.sh                                   # arma index.html (necesita el kit SIMULAB en ~/.claude/skills/simulab)
-node labs/lab05-panel-solar/check.mjs        # comprueba el modelo
-node labs/lab05-panel-solar/simular-csv.mjs  # regenera los datos simulados
+./build.sh            # arma index.html (necesita el kit SIMULAB en ~/.claude/skills/simulab)
+node check.mjs        # comprueba el modelo
+node simular-csv.mjs  # regenera los datos simulados
 ```
 
 Cada push a `main` se publica solo en Vercel. Corre `./build.sh` antes de cada commit para que `index.html` esté al día.
@@ -55,6 +57,6 @@ Cada push a `main` se publica solo en Vercel. Corre `./build.sh` antes de cada c
 - Pérdida por calor de −0.35 %/°C.
 - Rendimiento del 86 % por cableado e inversor (supuesto).
 
-La lista completa, con las fuentes, está en `labs/lab05-panel-solar/demo.json`.
+La lista completa, con las fuentes, está en `demo.json`.
 
 Motor, assets y herramientas: SIMULAB / KAPRI LAB por @0xKapri (MIT).
