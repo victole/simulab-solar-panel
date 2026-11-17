@@ -59,4 +59,4 @@ Cada push a `main` se publica solo en Vercel. Corre `./build.sh` antes de cada c
 
 La lista completa, con las fuentes, está en `demo.json`.
 
-Motor, assets y herramientas: SIMULAB / KAPRI LAB por @0xKapri (MIT).
+Motor, assets y herramientas: [SIMULAB](https://github.com/ecapri-dev/simulab-skill) / KAPRI LAB por @0xKapri (MIT). Fuentes JetBrains Mono, Caveat y Silkscreen (SIL OFL 1.1). `index.html` las incluye; los textos de las licencias están en [NOTICE](NOTICE).

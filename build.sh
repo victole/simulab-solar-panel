@@ -3,5 +3,5 @@
 set -e
 cd "$(dirname "$0")"
 node "$HOME/.claude/skills/simulab/tools/build.mjs" .
-mv dist/index.html index.html && rmdir dist
+cp dist/index.html index.html   # dist/ stays: the kit tools (stills, video) read it
 echo "listo: $(pwd)/index.html"

@@ -26,7 +26,9 @@ node check.mjs        # model checks; must all print "ok"
 node simular-csv.mjs  # regenerate simulated data, then ./build.sh
 ```
 
-- `./build.sh` needs the SIMULAB kit at `~/.claude/skills/simulab`, which is not in this repo. The kit's tools are `stills.mjs` (contact sheets), `video.sh` and `jumps.mjs`; run them against the project root (`.`).
+- `./build.sh` needs the SIMULAB kit at `~/.claude/skills/simulab`, which is not in this repo. The kit's tools are `stills.mjs` (contact sheets), `video.sh` and `jumps.mjs`; run them against the project root (`.`). They read `dist/index.html`, so build first; `build.sh` keeps `dist/` for that.
+- Preview the video before the final render: `bash ~/.claude/skills/simulab/tools/video.sh . panel-solar-tandil --preview`. The output goes to `render/`.
+- `NOTICE` carries the MIT licence of the SIMULAB kit and the OFL licences of the bundled fonts. Keep it whenever `index.html` ships.
 - Check UI changes in a real browser with Playwright from the kit's `node_modules`. Load `index.html` and confirm there are no `pageerror` events. Look at screenshots for overlapping text.
 
 ## Model conventions
