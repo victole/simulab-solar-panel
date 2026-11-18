@@ -6,6 +6,8 @@
 
 Es un solo archivo, `index.html`, y funciona sin internet.
 
+**Idioma.** Español o inglés, con el selector ES/EN arriba del panel de configuración (o `?lang=en` en la URL).
+
 **Ubicación.** Al abrir, la app toma el huso horario del navegador y estima la longitud (15° por hora). Si permites la ubicación, usa tu latitud y longitud reales. Siempre se pueden cambiar a mano en el panel izquierdo.
 
 ## Qué se puede hacer

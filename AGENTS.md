@@ -6,7 +6,7 @@ A solar-panel simulator for a house anywhere. Free mode takes the location from 
 
 - **One app.** Everything ships in `./index.html`, one offline file built by `./build.sh`. All source sits flat in the project root; never add a second page, app, or `labs/` folder, and never use "lab" or "Lab 05" in titles or text.
 - **Play/pause is manual.** Changing a setting must never start playback. The app opens paused in free mode. `liveSet` and `liveStart` are wrapped in `demo.js` so they keep the playing state; any new control must do the same.
-- **The UI is in Spanish (Argentina).**
+- **The UI is in Spanish (Argentina) and English.** Every visible string goes through `EN(es, en)` in `demo.js` (the ES/EN dropdown reloads with `?lang=`). Strings from `model.js` get a `defineText` entry instead. The guided video renders in Spanish.
 - **The model is the only source of numbers.** `model.js` holds pure functions with no drawing. `demo.js` only reads from it. Every constant needs a source in the `note` of `demo.json`, or is labelled as an assumption.
 - **No place names for the project's own site.** The guided video uses an anonymous example site (`SP_EJ`, 37.3° S); don't name it.
 - **Data:** simulated data must say it is simulated. Never invent inverter readings and present them as real.

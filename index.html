@@ -3684,6 +3684,9 @@ function pvSimExport(site) {
 // facing the equator at the right tilt, and the same rule in another city. Then the viewer drives it:
 // knobs = latitude, longitude, UTC, tilt, orientation, clouds, tree; D = restart the 3-day sweep. Model: model.js, data: demo.json note.
 // ---------------------------------------------------------------------------
+// language: ?lang=en|es (the kit reads it into LANG; the dropdown in the settings panel reloads with it)
+const EN = (es, en) => LANG === 'en' ? en : es;
+defineText({ 'PIERDES MUCHO': { en: 'YOU LOSE A LOT' }, 'ACEPTABLE': { en: 'ACCEPTABLE' }, 'EXCELENTE': { en: 'EXCELLENT' }, '# DIC': { en: 'DEC #' }, '# MAR': { en: 'MAR #' }, '# JUN': { en: 'JUN #' } });
 const SP = { pc: [0, 0, 17], W: 14, L: 9, R: 31, wall: 11 };
 const SP_COL = {
   wall: { light: '#fbf3e3', mid: '#efdcbc', dark: '#c9b28a' },
@@ -3696,14 +3699,15 @@ const SP_COL = {
 // east = -y (upper right), north = -x, west = +y. South hemisphere: turned 180° so the equator stays at +x.
 // The engine mirrors the world (VR), so this left-handed map reads correctly on screen.
 function enuW(v, hemi) { return [-v[1] * hemi, -v[0] * hemi, v[2]]; }
-const SP_CITIES = [[0, 'QUITO'], [4.7, 'BOGOTÁ'], [10.5, 'CARACAS'], [-12, 'LIMA'], [19.4, 'CDMX'], [23.1, 'LA HABANA'], [25.7, 'MONTERREY'], [-33.4, 'SANTIAGO'], [-34.6, 'BUENOS AIRES'], [40.4, 'MADRID'], [52.5, 'BERLÍN'], [59.9, 'OSLO']];
+const SP_CITIES = [[0, 'QUITO'], [4.7, 'BOGOTÁ'], [10.5, 'CARACAS'], [-12, 'LIMA'], [19.4, EN('CDMX', 'MEXICO CITY')], [23.1, EN('LA HABANA', 'HAVANA')], [25.7, 'MONTERREY'], [-33.4, 'SANTIAGO'], [-34.6, 'BUENOS AIRES'], [40.4, 'MADRID'], [52.5, EN('BERLÍN', 'BERLIN')], [59.9, 'OSLO']];
 const spCity = (lat) => { const c = SP_CITIES.find(c => Math.abs(c[0] - lat) <= 1.5); return c ? c[1] : null; };
 const spLat = (lat) => `${Math.abs(lat).toFixed(Math.abs(lat) % 1 ? 1 : 0)}° ${lat >= 0 ? 'N' : 'S'}`;
 function spDir(lat, azi) {
-  const eq = lat >= 0 ? 'SUR' : 'NORTE', po = lat >= 0 ? 'NORTE' : 'SUR', a = ((azi % 360) + 540) % 360 - 180;
-  if (Math.abs(a) <= 7) return `AL ${eq}`; if (Math.abs(a) >= 173) return `AL ${po}`;
-  if (Math.abs(a) === 90) return a > 0 ? 'AL OESTE' : 'AL ESTE';
-  return `${eq} ${Math.abs(a)}° AL ${a > 0 ? 'OESTE' : 'ESTE'}`;
+  const S = EN('SUR', 'SOUTH'), N = EN('NORTE', 'NORTH'), eq = lat >= 0 ? S : N, po = lat >= 0 ? N : S, a = ((azi % 360) + 540) % 360 - 180;
+  const at = (d) => EN(`AL ${d}`, `FACING ${d}`), side = a > 0 ? EN('OESTE', 'WEST') : EN('ESTE', 'EAST');
+  if (Math.abs(a) <= 7) return at(eq); if (Math.abs(a) >= 173) return at(po);
+  if (Math.abs(a) === 90) return at(side);
+  return EN(`${eq} ${Math.abs(a)}° AL ${side}`, `${eq} ${Math.abs(a)}° ${side}`);
 }
 // panel geometry in world: centre, normal n, width axis u, slope axis d (low edge -> high edge)
 function spPanel(st) {
@@ -3714,7 +3718,7 @@ function spPanel(st) {
 }
 
 defineAsset('casaSolar', {
-  name: 'casa', label: 'CASA · TECHO PLANO', group: 'floor', layer: 0, O: [0, 0, 0], anchor: [10, 0, 7], ring: [13, 13, 0.02], lab: [6, 6, 2],
+  name: 'casa', label: EN('CASA · TECHO PLANO', 'HOUSE · FLAT ROOF'), group: 'floor', layer: 0, O: [0, 0, 0], anchor: [10, 0, 7], ring: [13, 13, 0.02], lab: [6, 6, 2],
   draw(G, xf) {
     const h = SP.wall;
     const win = (c, x) => { c.fillStyle = '#bfe3f2'; prect(c, x, 3.2, 3.6, 3.2, 0.2); c.fill(); c.lineWidth = 0.18; c.strokeStyle = INK; c.stroke(); c.beginPath(); c.moveTo(x + 1.8, 3.2); c.lineTo(x + 1.8, 6.4); c.moveTo(x, 4.8); c.lineTo(x + 3.6, 4.8); c.lineWidth = 0.1; c.stroke(); };
@@ -3729,7 +3733,7 @@ defineAsset('casaSolar', {
 });
 
 defineAsset('panelSolar', {
-  name: 'panel solar', label: 'PANEL SOLAR', group: 'floor', layer: 2, O: [0, 0, 0], anchor: SP.pc, ring: [8, 8, SP.wall + 0.1], lab: [-8, 8, 8], dropH: 8,
+  name: 'panel solar', label: EN('PANEL SOLAR', 'SOLAR PANEL'), group: 'floor', layer: 2, O: [0, 0, 0], anchor: SP.pc, ring: [8, 8, SP.wall + 0.1], lab: [-8, 8, 8], dropH: 8,
   draw(G, xf, st) {
     const P = spPanel(st), C = xf.p(P.c), W2 = SP.W / 2, L2 = SP.L / 2;
     const corner = (a, b) => add3(C, add3(mul3(P.u, a), mul3(P.d, b)));
@@ -3750,7 +3754,7 @@ defineAsset('panelSolar', {
         c.strokeStyle = '#e9edf3'; c.lineWidth = 0.35; prect(c, 0, 0, SP.W, SP.L); c.stroke();
       });
     } else {
-      onPlane(G, corner(-W2, -L2), P.u, P.d, (c) => { c.strokeStyle = 'rgba(29,32,51,0.35)'; c.lineWidth = 0.15; for (const y of [SP.L * 0.3, SP.L * 0.7]) { c.beginPath(); c.moveTo(0.6, y); c.lineTo(SP.W - 0.6, y); c.stroke(); } ptxt(c, 'PARTE DE ATRÁS', SP.W / 2, SP.L / 2, 0.9, 'rgba(29,32,51,0.6)', 700, 'center'); });
+      onPlane(G, corner(-W2, -L2), P.u, P.d, (c) => { c.strokeStyle = 'rgba(29,32,51,0.35)'; c.lineWidth = 0.15; for (const y of [SP.L * 0.3, SP.L * 0.7]) { c.beginPath(); c.moveTo(0.6, y); c.lineTo(SP.W - 0.6, y); c.stroke(); } ptxt(c, EN('PARTE DE ATRÁS', 'BACK SIDE'), SP.W / 2, SP.L / 2, 0.9, 'rgba(29,32,51,0.6)', 700, 'center'); });
       post();
     }
     if (front) spPanelShadows(G, st, P, quad);
@@ -3758,10 +3762,10 @@ defineAsset('panelSolar', {
 });
 
 defineAsset('brujula', {
-  name: 'brújula', label: 'BRÚJULA', group: 'floor', layer: -1, O: [0, 0, 0], anchor: [0, 0, 0], ring: [20, 20, 0.02], lab: [12, -16, 0], dropH: 0.5, quick: true,
+  name: 'brújula', label: EN('BRÚJULA', 'COMPASS'), group: 'floor', layer: -1, O: [0, 0, 0], anchor: [0, 0, 0], ring: [20, 20, 0.02], lab: [12, -16, 0], dropH: 0.5, quick: true,
   draw(G, xf, st) {
     const h = st.hemi ?? 1, R = 20;
-    const dirs = [[[0, 1, 0], 'N'], [[0, -1, 0], 'S'], [[1, 0, 0], 'E'], [[-1, 0, 0], 'O']];
+    const dirs = [[[0, 1, 0], 'N'], [[0, -1, 0], 'S'], [[1, 0, 0], 'E'], [[-1, 0, 0], EN('O', 'W')]];
     const c = G.ctx;
     const ring = []; for (let k = 0; k < 72; k++) { const a = k / 72 * Math.PI * 2; ring.push(G.cam.p(xf.p([Math.cos(a) * R, Math.sin(a) * R, 0.02]))); }
     c.save(); c.setLineDash([6, 6]); pathPts(c, ring); c.lineWidth = 1.4; c.strokeStyle = 'rgba(29,32,51,0.35)'; c.stroke(); c.restore();
@@ -3770,17 +3774,17 @@ defineAsset('brujula', {
       pill(c, p[0], p[1], s, { align: 'center', valign: 'middle', bg: eq ? '#ffcf6b' : '#fffdf8', size: 13, padY: 5, padX: 8, shadow: false, lw: 1.5 });
     }
     const q = G.cam.p(xf.p(enuW([0, -(R + 2.6) * h, 0], h)));
-    hand(c, '← hacia el ecuador', q[0] + 20, q[1] + 2, 22, '#c2410c', 0, 1);
+    hand(c, EN('← hacia el ecuador', '← toward the equator'), q[0] + 20, q[1] + 2, 22, '#c2410c', 0, 1);
   },
 });
 
 // ---- chapters ---------------------------------------------------------------------------------------
 const SP_CH = [
-  { id: 'plano', btn: 'Plano', lat: -37.3, tilt: 0, azi: 0, tip: ['Plano: en invierno el sol va bajo', 'y le pega de lado.'] },
-  { id: 'vertical', btn: 'Vertical', lat: -37.3, tilt: 90, azi: 0, tip: ['Vertical, como en una pared:', 'el sol alto de verano le pasa de canto.'] },
-  { id: 'sur', btn: 'Al sur', lat: -37.3, tilt: 35, azi: 180, tip: ['Mirando al sur, lejos del ecuador:', 'le da la espalda al sol.'] },
-  { id: 'justo', btn: 'Justo', lat: -37.3, tilt: 33, azi: 0, tip: ['Al norte e inclinado casi tu latitud:', 'el mejor promedio del año.'] },
-  { id: 'techo', btn: 'Tu techo', lat: -37.3, tilt: 25, azi: 20, tip: ['25° y girado 20° al oeste:', 'errar un poco cuesta poco.'] },
+  { id: 'plano', btn: EN('Plano', 'Flat'), lat: -37.3, tilt: 0, azi: 0, tip: EN(['Plano: en invierno el sol va bajo', 'y le pega de lado.'], ['Flat: in winter the sun runs low', 'and hits it from the side.']) },
+  { id: 'vertical', btn: 'Vertical', lat: -37.3, tilt: 90, azi: 0, tip: EN(['Vertical, como en una pared:', 'el sol alto de verano le pasa de canto.'], ['Vertical, like on a wall:', 'the high summer sun just grazes it.']) },
+  { id: 'sur', btn: EN('Al sur', 'South'), lat: -37.3, tilt: 35, azi: 180, tip: EN(['Mirando al sur, lejos del ecuador:', 'le da la espalda al sol.'], ['Facing south, away from the equator:', 'it turns its back on the sun.']) },
+  { id: 'justo', btn: EN('Justo', 'Right'), lat: -37.3, tilt: 33, azi: 0, tip: EN(['Al norte e inclinado casi tu latitud:', 'el mejor promedio del año.'], ['North, tilted close to your latitude:', 'the best average over the year.']) },
+  { id: 'techo', btn: EN('Tu techo', 'Your roof'), lat: -37.3, tilt: 25, azi: 20, tip: EN(['25° y girado 20° al oeste:', 'errar un poco cuesta poco.'], ['25° and turned 20° west:', 'being a little off costs little.']) },
 ]
 const SP_LEAD = 1.2, SP_DAYV = 2.6, SP_HOLD = 2.8, SP_SWEEP = SP_DAYV * PV_DAYS.length;
 // the two chapters on the real house: the config panel (clouds) and the inverter data
@@ -3882,8 +3886,8 @@ function spCurve(lat, tilt, azi, n, env) {
   return (_spCurve[key] = pts);
 }
 const SP_RATE = 1;   // free mode: hours of model time per second of Play
-const SP_MON = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const spDate = (n) => { const d = new Date(Date.UTC(2026, 0, n)); return `${d.getUTCDate()} ${SP_MON[d.getUTCMonth()]}`; };
+const SP_MON = EN(['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'], ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']);
+const spDate = (n) => { const d = new Date(Date.UTC(2026, 0, n)); return EN(`${d.getUTCDate()} ${SP_MON[d.getUTCMonth()]}`, `${SP_MON[d.getUTCMonth()]} ${d.getUTCDate()}`); };
 // free mode: keep the FECHA and HORA sliders on the moment shown, so what you note matches the scene
 let SP_SYNC = '';
 function spSyncKnobs(st) {
@@ -3922,14 +3926,15 @@ function spExpected(st, n, clock) {
   const solar = clock + (4 * (st.lon - 15 * st.utc) + pvEoT(n)) / 60, g = pvAt(st.lat, Math.round(st.tilt), Math.round(st.azi), n, solar, Object.assign({}, st.env, { cloud: 0 })).poa;
   return g * pvHeat(g) * (st.kwp || 5.5) * SP_PR;
 }
-const spDeg = (a) => a === 0 ? '0°' : `${Math.abs(a)}° ${a > 0 ? 'O' : 'E'}`;
+const spAziFmt = (v) => v === 0 ? EN('0° · al ecuador', '0° · to the equator') : EN(`${Math.abs(v)}° al ${v > 0 ? 'oeste' : 'este'}`, `${Math.abs(v)}° ${v > 0 ? 'west' : 'east'}`);
+const spDeg = (a) => a === 0 ? '0°' : `${Math.abs(a)}° ${a > 0 ? EN('O', 'W') : 'E'}`;
 const spWin = (w) => `${spHour(w[0])}-${spHour(w[1])}`;
 function spDataBays(c, st, D = SP_DATA) {
   const d = spDiag(st, D), n = st.sweep.n, day = D.byN[n] || [];
   // BAY 03 · real vs expected for the day shown
   let real = 0, exp = 0; const pts = day.map(r => { const e = spExpected(st, n, r.clock); real += r.p * 5 / 60; exp += e * 5 / 60; return [r.clock, r.p, e]; });
   const ratio = exp > 0 ? real / exp : 0;
-  let b = bayFrame(c, 2, 'BAY 03 · REAL VS TEÓRICO', day.length ? `${Math.round(ratio * 100)} % · ${spDate(n).toUpperCase()}` : 'SIN DATOS ESTE DÍA', day.length ? (ratio > 0.9 ? BAY_BG.lime : ratio > 0.7 ? BAY_BG.amber : BAY_BG.coral) : BAY_BG.grey);
+  let b = bayFrame(c, 2, EN('BAY 03 · REAL VS TEÓRICO', 'BAY 03 · REAL VS EXPECTED'), day.length ? `${Math.round(ratio * 100)} % · ${spDate(n).toUpperCase()}` : EN('SIN DATOS ESTE DÍA', 'NO DATA THIS DAY'), day.length ? (ratio > 0.9 ? BAY_BG.lime : ratio > 0.7 ? BAY_BG.amber : BAY_BG.coral) : BAY_BG.grey);
   const x0 = b.x + 14, x1 = b.x + b.w - 14, y0 = b.y + 44, y1 = b.y + 168, kw = Math.max(1, st.kwp || 5.5) * 0.95;
   const X = (h) => x0 + (h - 4) / 17 * (x1 - x0), Y = (p) => y1 - clamp(p / kw) * (y1 - y0);
   c.save(); c.fillStyle = '#f4f1ea'; rr(c, x0, y0 - 4, x1 - x0, y1 - y0 + 8, 6); c.fill();
@@ -3941,40 +3946,44 @@ function spDataBays(c, st, D = SP_DATA) {
     const xh = X(st.sweep.clock); c.strokeStyle = 'rgba(29,32,51,0.5)'; c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(xh, y0); c.lineTo(xh, y1); c.stroke(); c.setLineDash([]);
   }
   c.textAlign = 'left'; c.font = `700 11px ${FONT_MONO}`; c.fillStyle = INK;
-  c.fillText(day.length ? `real ${real.toFixed(1)} kWh · teórico ${exp.toFixed(1)} kWh` : 'elige una FECHA del archivo', x0, b.y + 196);
-  c.font = `700 9.5px ${FONT_MONO}`; c.fillStyle = '#3a46aa'; c.fillText('● real', x0 + 6, y0 + 10); c.fillStyle = '#e8590c'; c.fillText('— teórico', x0 + 6, y0 + 22);
+  c.fillText(day.length ? EN(`real ${real.toFixed(1)} kWh · teórico ${exp.toFixed(1)} kWh`, `real ${real.toFixed(1)} kWh · expected ${exp.toFixed(1)} kWh`) : EN('elige una FECHA del archivo', 'pick a DATE from the file'), x0, b.y + 196);
+  c.font = `700 9.5px ${FONT_MONO}`; c.fillStyle = '#3a46aa'; c.fillText('● real', x0 + 6, y0 + 10); c.fillStyle = '#e8590c'; c.fillText(EN('— teórico', '— expected'), x0 + 6, y0 + 22);
   c.restore();
   // BAY 04 · the orientation the data says the panel really has
   const same = Math.abs(d.tilt - Math.round(st.tilt)) <= 3 && Math.abs(d.azi - Math.round(st.azi)) <= 5, eff = d.k / ((st.kwp || 5.5) * SP_PR), lose = 1 - pvShare(st.lat, d.tilt, d.azi);
-  b = bayFrame(c, 3, 'BAY 04 · DIAGNÓSTICO', same ? 'COINCIDE' : 'NO COINCIDE', same ? BAY_BG.lime : BAY_BG.amber);
-  bigValue(c, b, `${d.tilt}° · ${spDeg(d.azi)}`, '', `estimado con ${d.clearDays.length} días despejados de ${d.days}`);
+  b = bayFrame(c, 3, EN('BAY 04 · DIAGNÓSTICO', 'BAY 04 · DIAGNOSIS'), same ? EN('COINCIDE', 'MATCHES') : EN('NO COINCIDE', 'NO MATCH'), same ? BAY_BG.lime : BAY_BG.amber);
+  bigValue(c, b, `${d.tilt}° · ${spDeg(d.azi)}`, '', EN(`estimado con ${d.clearDays.length} días despejados de ${d.days}`, `estimated from ${d.clearDays.length} clear days of ${d.days}`));
   c.save(); c.font = `400 11.5px ${FONT_MONO}`; c.fillStyle = '#545867';
-  const L = [`configurado en la app: ${Math.round(st.tilt)}° · ${spDeg(Math.round(st.azi))}`,
+  const L = EN([`configurado en la app: ${Math.round(st.tilt)}° · ${spDeg(Math.round(st.azi))}`,
     `así pierde ${(lose * 100).toFixed(1)} % frente al mejor ángulo`,
     d.shade.length ? `sombra fija: ${d.shade.map(spWin).join(', ')}` : 'sin sombras fijas en días claros',
-    `rinde ${Math.round(eff * 100)} % de lo esperado para ${st.kwp || 5.5} kWp`];
+    `rinde ${Math.round(eff * 100)} % de lo esperado para ${st.kwp || 5.5} kWp`],
+    [`set in the app: ${Math.round(st.tilt)}° · ${spDeg(Math.round(st.azi))}`,
+    `that loses ${(lose * 100).toFixed(1)} % against the best angle`,
+    d.shade.length ? `fixed shade: ${d.shade.map(spWin).join(', ')}` : 'no fixed shade on clear days',
+    `gives ${Math.round(eff * 100)} % of what ${st.kwp || 5.5} kWp should`]);
   L.forEach((t, i) => c.fillText(t, b.x + 14, b.y + 124 + i * 19));
   c.restore();
 }
 function spDataStatus() {
   if (!SP_BOX) return; const el = SP_BOX.querySelector('#datastatus');
   const D = SP_DATA; SP_BOX.querySelector('#dataapply').disabled = !(D && D.diag); SP_BOX.querySelector('#dataclear').disabled = !D;
-  if (!D) { el.textContent = 'Sin datos. Formato: fecha y hora, potencia (kW o W). Acepta , o ; y coma decimal.'; return; }
+  if (!D) { el.textContent = EN('Sin datos. Formato: fecha y hora, potencia (kW o W). Acepta , o ; y coma decimal.', 'No data. Format: date and time, power (kW or W). Accepts , or ; and decimal comma.'); return; }
   const a = D.rows[0], z = D.rows[D.rows.length - 1], d = D.diag;
-  el.innerHTML = `<b>${D.name}</b><br>${D.rows.length} filas · ${Object.keys(D.byN).length} días · ${a.d}/${a.mo} a ${z.d}/${z.mo}/${z.y}` + (d ? `<br>Orientación estimada: <b>${d.tilt}° · ${spDeg(d.azi)}</b>` + (d.shade.length ? `<br>Sombra fija: ${d.shade.map(spWin).join(', ')}` : '') : '');
+  el.innerHTML = `<b>${D.name}</b><br>${D.rows.length} ${EN('filas', 'rows')} · ${Object.keys(D.byN).length} ${EN('días', 'days')} · ${a.d}/${a.mo} ${EN('a', 'to')} ${z.d}/${z.mo}/${z.y}` + (d ? `<br>${EN('Orientación estimada', 'Estimated orientation')}: <b>${d.tilt}° · ${spDeg(d.azi)}</b>` + (d.shade.length ? `<br>${EN('Sombra fija', 'Fixed shade')}: ${d.shade.map(spWin).join(', ')}` : '') : '');
 }
 function spDataPanel(box) {
-  const h = document.createElement('h3'); h.textContent = 'DATOS DEL INVERSOR'; box.appendChild(h);
+  const h = document.createElement('h3'); h.textContent = EN('DATOS DEL INVERSOR', 'INVERTER DATA'); box.appendChild(h);
   const w = document.createElement('div'); w.className = 'data';
-  w.innerHTML = `<button id="dataimport">Importar CSV…</button> <button id="datasim">Cargar CSV simulado</button>
-<p id="datastatus"></p><button id="dataapply">Usar orientación estimada</button> <button id="dataclear">Quitar datos</button>
+  w.innerHTML = `<button id="dataimport">${EN('Importar CSV…', 'Import CSV…')}</button> <button id="datasim">${EN('Cargar CSV simulado', 'Load simulated CSV')}</button>
+<p id="datastatus"></p><button id="dataapply">${EN('Usar orientación estimada', 'Use estimated orientation')}</button> <button id="dataclear">${EN('Quitar datos', 'Clear data')}</button>
 <input id="datafile" type="file" accept=".csv,.txt,text/csv" hidden>`;
   box.appendChild(w);
   const $ = (id) => w.querySelector('#' + id);
-  const fail = (e) => { $('datastatus').textContent = 'No pude leer el archivo: ' + e.message; };
+  const fail = (e) => { $('datastatus').textContent = EN('No pude leer el archivo: ', 'Could not read the file: ') + e.message; };
   $('dataimport').onclick = () => $('datafile').click();
   $('datafile').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { spLoadCSV(await f.text(), f.name); } catch (err) { fail(err); } e.target.value = ''; };
-  $('datasim').onclick = () => { try { const s = SP_LAST; spLoadCSV(pvSimExport({ lat: s.lat, lon: s.lon, utc: s.utc }).csv, `simulado para ${spLat(s.lat)} (no son datos reales)`); } catch (err) { fail(err); } };
+  $('datasim').onclick = () => { try { const s = SP_LAST; spLoadCSV(pvSimExport({ lat: s.lat, lon: s.lon, utc: s.utc }).csv, EN(`simulado para ${spLat(s.lat)} (no son datos reales)`, `simulated for ${spLat(s.lat)} (not real data)`)); } catch (err) { fail(err); } };
   $('dataapply').onclick = () => {
     const d = SP_DATA && SP_DATA.diag; if (!d) return;
     spKnob('tilt', d.tilt); spKnob('azi', d.azi);
@@ -3995,25 +4004,25 @@ function spMock(c, st) {
   const button = (key, label, on, hot) => { rows.push(['b', label, y, on, hot]); targets[key] = [px + 14 + Math.min(pw - 28, label.length * 10.5 + 20) / 2, y + 17]; y += 46; };
   const text = (t, bold) => { rows.push(['t', t, y, bold]); y += 20; };
   head('PANEL');
-  slider('tilt', 'INCLINACIÓN', st.tilt / 90, `${Math.round(st.tilt)}°`);
-  slider('azi', 'GIRO', (st.azi + 180) / 360, Math.round(st.azi) ? `${Math.abs(Math.round(st.azi))}° al ${st.azi > 0 ? 'oeste' : 'este'}` : '0° · al ecuador');
+  slider('tilt', EN('INCLINACIÓN', 'TILT'), st.tilt / 90, `${Math.round(st.tilt)}°`);
+  slider('azi', EN('GIRO', 'TURN'), (st.azi + 180) / 360, spAziFmt(Math.round(st.azi)));
   if (nube) {
-    head('ENTORNO');
+    head(EN('ENTORNO', 'SURROUNDINGS'));
     const C = st.envNow.cloud || 0;
-    slider('cloud', 'NUBES', C, C ? `${Math.round(C * 100)} % del cielo` : 'cielo limpio');
-    slider('tree', 'ÁRBOL', 0, 'sin árbol');
+    slider('cloud', EN('NUBES', 'CLOUDS'), C, C ? EN(`${Math.round(C * 100)} % del cielo`, `${Math.round(C * 100)} % of the sky`) : EN('cielo limpio', 'clear sky'));
+    slider('tree', EN('ÁRBOL', 'TREE'), 0, EN('sin árbol', 'no tree'));
   } else {
-    head('DATOS DEL INVERSOR');
-    button('imp', 'Importar CSV…', true, false);
-    button('sim', 'Cargar CSV simulado', true, Math.abs(e - SPI.load) < 0.2);
-    if (st.dataOn) { const d = st.diag; text('simulado-2026-11.csv', true); text('2702 filas · 14 días'); text(`Orientación estimada: ${d.tilt}° · ${spDeg(d.azi)}`, true); text(`Sombra fija: ${d.shade.map(spWin).join(', ')}`); y += 8; }
-    button('apply', 'Usar orientación estimada', st.dataOn, Math.abs(e - SPI.apply) < 0.2);
+    head(EN('DATOS DEL INVERSOR', 'INVERTER DATA'));
+    button('imp', EN('Importar CSV…', 'Import CSV…'), true, false);
+    button('sim', EN('Cargar CSV simulado', 'Load simulated CSV'), true, Math.abs(e - SPI.load) < 0.2);
+    if (st.dataOn) { const d = st.diag; text('simulado-2026-11.csv', true); text(EN('2702 filas · 14 días', '2702 rows · 14 days')); text(`${EN('Orientación estimada', 'Estimated orientation')}: ${d.tilt}° · ${spDeg(d.azi)}`, true); text(`${EN('Sombra fija', 'Fixed shade')}: ${d.shade.map(spWin).join(', ')}`); y += 8; }
+    button('apply', EN('Usar orientación estimada', 'Use estimated orientation'), st.dataOn, Math.abs(e - SPI.apply) < 0.2);
   }
   const h = y - y0 + 6;
   c.save(); c.globalAlpha = a;
   c.fillStyle = 'rgba(29,32,51,0.25)'; rr(c, x + 5, y0 + 6, w, h, 16); c.fill();
   c.fillStyle = BG; rr(c, x, y0, w, h, 16); c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
-  c.font = `700 15px ${FONT_MONO}`; c.letterSpacing = '1px'; c.fillStyle = TXT; c.textBaseline = 'middle'; c.fillText('⚙ CONFIGURACIÓN', px, y0 + 28);
+  c.font = `700 15px ${FONT_MONO}`; c.letterSpacing = '1px'; c.fillStyle = TXT; c.textBaseline = 'middle'; c.fillText(EN('⚙ CONFIGURACIÓN', '⚙ SETTINGS'), px, y0 + 28);
   c.letterSpacing = '0px';
   for (const r of rows) {
     if (r[0] === 'h') { c.font = `700 13px ${FONT_MONO}`; c.fillStyle = LIME; c.fillText(r[1], px, r[2] + 10); }
@@ -4171,7 +4180,7 @@ if (typeof window !== 'undefined' && !new URLSearchParams(location.search).has('
 }
 
 // ---- left settings panel: every knob and the live buttons, hideable ----------------------------------------
-const SP_GROUPS = [['MOMENTO', ['fecha', 'hora']], ['UBICACIÓN', ['lat', 'lon', 'utc']], ['PANEL', ['tilt', 'azi', 'kwp']], ['ENTORNO', ['cloud', 'tree']]];
+const SP_GROUPS = [[EN('MOMENTO', 'MOMENT'), ['fecha', 'hora']], [EN('UBICACIÓN', 'LOCATION'), ['lat', 'lon', 'utc']], ['PANEL', ['tilt', 'azi', 'kwp']], [EN('ENTORNO', 'SURROUNDINGS'), ['cloud', 'tree']]];
 function spSidebar() {
   const q = new URLSearchParams(location.search); if (q.has('render') || q.has('embed')) return;
   const knobs = document.querySelectorAll('#bar .knob'), lb = document.getElementById('livebtn');
@@ -4179,7 +4188,7 @@ function spSidebar() {
   const W = 300, css = document.createElement('style');
   css.textContent = `#cfg{position:fixed;left:0;top:0;bottom:0;width:${W}px;background:#121316;border-right:1.5px solid #26292f;padding:16px 16px 24px;overflow:auto;z-index:5;transition:transform .2s}
 #cfg.off{transform:translateX(-100%)} #cfg h3{font:700 12px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#c8f04a;margin:18px 0 8px}
-#cfg .top{display:flex;justify-content:space-between;align-items:center;font:700 13px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#e8eaee;margin-bottom:12px}
+#cfg .top{display:flex;gap:8px;justify-content:space-between;align-items:center;font:700 13px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#e8eaee;margin-bottom:12px}
 #cfg .knob{display:grid;grid-template-columns:1fr auto;gap:4px 8px;margin:0 0 12px;font-size:11.5px}
 #cfg .knob input{grid-column:1/3;width:100%} #cfg .knob .v{text-align:right;min-width:0}
 #cfg button{font:700 12px 'JetBrains Mono',monospace;color:#e8eaee;background:#1b1d22;border:1.5px solid #34373e;border-radius:999px;padding:7px 11px;cursor:pointer}
@@ -4187,19 +4196,22 @@ function spSidebar() {
 #cfg #live{display:flex;gap:8px;flex-wrap:wrap} #cfg #live .hold{background:#24262d;border-color:#c8f04a;touch-action:none;user-select:none;padding:8px 14px 8px 8px}
 #cfg #live .hold kbd{font:700 11px 'JetBrains Mono',monospace;background:#c8f04a;color:#1d2033;border-radius:5px;padding:2px 6px;margin-right:8px} #cfg #live .hold.on{background:#c8f04a;color:#1d2033}
 #cfg p{font-size:11px;color:#8b909a;line-height:1.55;margin:14px 0 0} #cfg .data button{margin:0 4px 6px 0} #cfg .data button:disabled{opacity:.4;cursor:default} #cfg .data p{margin:4px 0 8px} #cfg .data b{color:#e8eaee}
+#cfg select{font:700 11px 'JetBrains Mono',monospace;color:#e8eaee;background:#1b1d22;border:1.5px solid #34373e;border-radius:999px;padding:5px 8px;margin-left:auto;cursor:pointer}
 #cfgbtn{position:fixed;left:12px;top:12px;z-index:6;font:700 12px 'JetBrains Mono',monospace;color:#1d2033;background:#c8f04a;border:0;border-radius:999px;padding:8px 13px;cursor:pointer}`;
   document.head.appendChild(css);
   const box = document.createElement('aside'); box.id = 'cfg';
-  box.innerHTML = '<div class="top"><span>⚙ CONFIGURACIÓN</span><button id="cfgclose" title="Ocultar">✕</button></div>';
+  box.innerHTML = `<div class="top"><span>${EN('⚙ CONFIGURACIÓN', '⚙ SETTINGS')}</span><select id="cfglang" title="${EN('Idioma', 'Language')}"><option value="es">ES</option><option value="en">EN</option></select><button id="cfgclose" title="${EN('Ocultar', 'Hide')}">✕</button></div>`;
+  const ls = box.querySelector('#cfglang'); ls.value = LANG === 'en' ? 'en' : 'es';
+  ls.onchange = () => { const u = new URL(location.href); u.searchParams.set('lang', ls.value); location.href = u.href; };  // ponytail: reload; the free-mode settings start over
   box.appendChild(lb); box.appendChild(document.getElementById('live'));
   const byKey = {}; DEMO.knobs.forEach((k, i) => { byKey[k.key] = knobs[i]; });
   for (const [title, keys] of SP_GROUPS) { const h = document.createElement('h3'); h.textContent = title; box.appendChild(h); for (const k of keys) box.appendChild(byKey[k]); }
   spDataPanel(box);
-  const tip = document.createElement('p'); tip.innerHTML = 'Arrastra el <b>árbol</b> en la escena: su sombra sigue al sol.<br>Las <b>nubes</b> viajan con el viento; cuando su sombra pasa por el panel, la potencia baja.<br><b>Espacio</b> pausa el sol.'; box.appendChild(tip);
+  const tip = document.createElement('p'); tip.innerHTML = EN('Arrastra el <b>árbol</b> en la escena: su sombra sigue al sol.<br>Las <b>nubes</b> viajan con el viento; cuando su sombra pasa por el panel, la potencia baja.<br><b>Espacio</b> pausa el sol.', 'Drag the <b>tree</b> in the scene: its shadow follows the sun.<br><b>Clouds</b> drift with the wind; when their shadow crosses the panel, the power drops.<br><b>Space</b> pauses the sun.'); box.appendChild(tip);
   // drop focus after a click so Space pauses the sun instead of pressing the button again
   box.addEventListener('click', (e) => { if (e.target.closest('button')) e.target.closest('button').blur(); });
   document.body.appendChild(box);
-  const btn = document.createElement('button'); btn.id = 'cfgbtn'; btn.textContent = '⚙ Configuración'; document.body.appendChild(btn);
+  const btn = document.createElement('button'); btn.id = 'cfgbtn'; btn.textContent = EN('⚙ Configuración', '⚙ Settings'); document.body.appendChild(btn);
   const cv = document.getElementById('stage');
   const layout = () => {
     const open = !box.classList.contains('off'); btn.style.display = open ? 'none' : '';
@@ -4237,29 +4249,29 @@ function spLocate() {
 }
 
 const DEMO = {
-  id: 'PANEL', num: '05', title: 'PANEL SOLAR', tagline: 'ORIENTA · INCLINA · COSECHA', category: 'ENERGÍA', brand: 'SIMULAB',
-  plate: ['SIMULAB · PANEL SOLAR', 'hacia dónde y cuánto inclinar tu panel'],
-  chips: ['SOL CALCULADO · 3 DÍAS CLAVE · AÑO COMPLETO', 'ENERGÍA'],
-  caption: 'Apunta al ecuador e inclínalo casi tu latitud.',
-  intro: { seconds: 5, lines: ['¿Hacia dónde y cuánto se inclina', 'tu panel solar?'], pill: 'PANEL SOLAR' },
+  id: 'PANEL', num: '05', title: EN('PANEL SOLAR', 'SOLAR PANEL'), tagline: EN('ORIENTA · INCLINA · COSECHA', 'AIM · TILT · HARVEST'), category: EN('ENERGÍA', 'ENERGY'), brand: 'SIMULAB',
+  plate: EN(['SIMULAB · PANEL SOLAR', 'hacia dónde y cuánto inclinar tu panel'], ['SIMULAB · SOLAR PANEL', 'which way to face your panel, and how much to tilt it']),
+  chips: EN(['SOL CALCULADO · 3 DÍAS CLAVE · AÑO COMPLETO', 'ENERGÍA'], ['COMPUTED SUN · 3 KEY DAYS · FULL YEAR', 'ENERGY']),
+  caption: EN('Apunta al ecuador e inclínalo casi tu latitud.', 'Face the equator and tilt it close to your latitude.'),
+  intro: { seconds: 5, lines: EN(['¿Hacia dónde y cuánto se inclina', 'tu panel solar?'], ['Which way should your solar panel', 'face, and how much should it tilt?']), pill: EN('PANEL SOLAR', 'SOLAR PANEL') },
   major: ['casa', 'pan'],
   params: { kwp: 5.5, fecha: 321, hora: 13, lat: -37.3, lon: -59.1, utc: -3, tilt: 33, azi: 0, cloud: 30, tree: 10, tx: -3, ty: 7 },
   knobs: [
-    { key: 'fecha', label: 'FECHA', min: 1, max: 365, step: 1, live: true, fmt: (v) => spDate(v) },
-    { key: 'hora', label: 'HORA (RELOJ)', min: 0, max: 23.75, step: 0.25, live: true, fmt: (v) => spHour(v) },
-    { key: 'lat', label: 'LATITUD', min: -60, max: 60, step: 1, live: true, fmt: (v) => `${spLat(v)}${spCity(v) ? ' · ' + spCity(v) : ''}` },
-    { key: 'lon', label: 'LONGITUD', min: -180, max: 180, step: 0.5, live: true, fmt: (v) => `${Math.abs(v)}° ${v >= 0 ? 'E' : 'O'}` },
-    { key: 'utc', label: 'HUSO', min: -12, max: 14, step: 1, live: true, fmt: (v) => `UTC${v >= 0 ? '+' : '−'}${Math.abs(v)}` },
-    { key: 'tilt', label: 'INCLINACIÓN', min: 0, max: 90, step: 1, live: true, fmt: (v) => `${v}°` },
-    { key: 'azi', label: 'GIRO', min: -180, max: 180, step: 1, live: true, fmt: (v) => v === 0 ? '0° · al ecuador' : `${Math.abs(v)}° al ${v > 0 ? 'oeste' : 'este'}` },
-    { key: 'kwp', label: 'POTENCIA INSTALADA', min: 0.5, max: 20, step: 0.5, live: true, fmt: (v) => `${v} kWp` },
-    { key: 'cloud', label: 'NUBES', min: 0, max: 100, step: 10, live: true, fmt: (v) => `${v} % del cielo` },
-    { key: 'tree', label: 'ÁRBOL', min: 0, max: 15, step: 1, live: true, fmt: (v) => v ? `${v} m de alto · arrástralo` : 'sin árbol' },
+    { key: 'fecha', label: EN('FECHA', 'DATE'), min: 1, max: 365, step: 1, live: true, fmt: (v) => spDate(v) },
+    { key: 'hora', label: EN('HORA (RELOJ)', 'TIME (CLOCK)'), min: 0, max: 23.75, step: 0.25, live: true, fmt: (v) => spHour(v) },
+    { key: 'lat', label: EN('LATITUD', 'LATITUDE'), min: -60, max: 60, step: 1, live: true, fmt: (v) => `${spLat(v)}${spCity(v) ? ' · ' + spCity(v) : ''}` },
+    { key: 'lon', label: EN('LONGITUD', 'LONGITUDE'), min: -180, max: 180, step: 0.5, live: true, fmt: (v) => `${Math.abs(v)}° ${v >= 0 ? 'E' : EN('O', 'W')}` },
+    { key: 'utc', label: EN('HUSO', 'TIME ZONE'), min: -12, max: 14, step: 1, live: true, fmt: (v) => `UTC${v >= 0 ? '+' : '−'}${Math.abs(v)}` },
+    { key: 'tilt', label: EN('INCLINACIÓN', 'TILT'), min: 0, max: 90, step: 1, live: true, fmt: (v) => `${v}°` },
+    { key: 'azi', label: EN('GIRO', 'TURN'), min: -180, max: 180, step: 1, live: true, fmt: spAziFmt },
+    { key: 'kwp', label: EN('POTENCIA INSTALADA', 'INSTALLED POWER'), min: 0.5, max: 20, step: 0.5, live: true, fmt: (v) => `${v} kWp` },
+    { key: 'cloud', label: EN('NUBES', 'CLOUDS'), min: 0, max: 100, step: 10, live: true, fmt: (v) => EN(`${v} % del cielo`, `${v} % of the sky`) },
+    { key: 'tree', label: EN('ÁRBOL', 'TREE'), min: 0, max: 15, step: 1, live: true, fmt: (v) => v ? EN(`${v} m de alto · arrástralo`, `${v} m tall · drag it`) : EN('sin árbol', 'no tree') },
   ],
-  live: { label: 'Modo libre', controls: [] },
+  live: { label: EN('Modo libre', 'Free mode'), controls: [] },
   timeline: (p) => spTimeline(p || {}),
   // chapter buttons always come from the guided timeline, even while the free mode is on
-  steps: (TL) => { const V = TL.live ? spTimeline({}) : TL; return [['0 · Armar', 0], ...V.CH.map((c, i) => [`${i + 1} · ${c.btn}`, c.t0 - 0.05]), ['6 · Nubes', V.T.nube0], ['7 · Inversor', V.T.inv0]]; },
+  steps: (TL) => { const V = TL.live ? spTimeline({}) : TL; return [[EN('0 · Armar', '0 · Build'), 0], ...V.CH.map((c, i) => [`${i + 1} · ${c.btn}`, c.t0 - 0.05]), [EN('6 · Nubes', '6 · Clouds'), V.T.nube0], [EN('7 · Inversor', '7 · Inverter'), V.T.inv0]]; },
   state: (TL, t) => spState(TL, t),
   drawScene(G, st, TL) {
     drawTapete(G, st, { x0: -25, x1: 25, y0: -25, y1: 25 });
@@ -4306,31 +4318,32 @@ const DEMO = {
     const dur = ch ? ch.t1 - ch.t0 : 0, fade = (a, b) => seg(u, a, a + 0.25) * (1 - seg(u, b - 0.25, b));
     if (now && now.up > 0 && !cap) {
       const pan = spPanel(st), A = P(add3(SP.pc, mul3(pan.n, 9)));
-      const th = Math.round(now.theta), txt = now.shade > 0.5 ? `θ = ${th}° · LO TAPA EL ÁRBOL` : (now.cloudB || 0) > 0.5 ? `θ = ${th}° · PASA UNA NUBE` : now.shade + (now.cloudB || 0) > 0 ? `θ = ${th}° · SOMBRA PARCIAL` : now.cos <= 0 ? `θ = ${th}° · NO LE PEGA` : `θ = ${th}° · ${Math.round(now.cos * 100)} % DEL RAYO`;
+      const th = Math.round(now.theta), txt = `θ = ${th}° · ` + (now.shade > 0.5 ? EN('LO TAPA EL ÁRBOL', 'THE TREE BLOCKS IT') : (now.cloudB || 0) > 0.5 ? EN('PASA UNA NUBE', 'A CLOUD PASSES') : now.shade + (now.cloudB || 0) > 0 ? EN('SOMBRA PARCIAL', 'PARTIAL SHADE') : now.cos <= 0 ? EN('NO LE PEGA', 'NO DIRECT SUN') : EN(`${Math.round(now.cos * 100)} % DEL RAYO`, `${Math.round(now.cos * 100)} % OF THE BEAM`));
       callout(c, A, -150, -40, txt, 1, now.shade + (now.cloudB || 0) > 0 ? '#ff9e93' : now.cos > 0.9 ? '#c8f04a' : now.cos > 0.5 ? '#ffcf6b' : '#ff9e93');
     }
     if (st.extra) {
       const e = st.eu, D = st.extra === 'nube' ? SP_NUBE_D : SP_INV_D, a = seg(e, 0.1, 0.4) * (1 - seg(e, D - 0.35, D - 0.05));
-      const tip = st.extra === 'nube' ? ['Nubes: su sombra viaja con el viento', 'y baja la potencia cuando pasa por el panel.']
-        : e < SPI.load ? ['Esto midió tu inversor en noviembre.', '¿Cómo está montado de verdad el panel?']
-        : e < SPI.apply ? ['Azul: lo real. Naranja: lo teórico', `para ${SPI.tilt0}° al norte. No coinciden.`]
-        : [`Los datos dicen ${st.diag.tilt}° y ${spDeg(st.diag.azi).replace(' O', ' al oeste')},`, `y un árbol que tapa de ${st.diag.shade.map(spWin).join(', ')}.`];
-      tipCard(c, CARD.x + 30, 146, tip, a, st.extra === 'nube' ? 'PANEL DE CONFIGURACIÓN' : 'DATOS DEL INVERSOR');
+      const sh = st.diag && st.diag.shade.map(spWin).join(', '), dz = st.diag && `${Math.abs(st.diag.azi)}°`;
+      const tip = st.extra === 'nube' ? EN(['Nubes: su sombra viaja con el viento', 'y baja la potencia cuando pasa por el panel.'], ['Clouds: their shadow drifts with the wind', 'and the power drops when it crosses the panel.'])
+        : e < SPI.load ? EN(['Esto midió tu inversor en noviembre.', '¿Cómo está montado de verdad el panel?'], ['This is what your inverter measured in November.', 'How is the panel really mounted?'])
+        : e < SPI.apply ? EN(['Azul: lo real. Naranja: lo teórico', `para ${SPI.tilt0}° al norte. No coinciden.`], ['Blue: real. Orange: expected', `for ${SPI.tilt0}° facing north. They don't match.`])
+        : EN([`Los datos dicen ${st.diag.tilt}° y ${dz} al oeste,`, `y un árbol que tapa de ${sh}.`], [`The data says ${st.diag.tilt}° and ${dz} west,`, `and a tree that shades it ${sh}.`]);
+      tipCard(c, CARD.x + 30, 146, tip, a, st.extra === 'nube' ? EN('PANEL DE CONFIGURACIÓN', 'SETTINGS PANEL') : EN('DATOS DEL INVERSOR', 'INVERTER DATA'));
     }
     if (ch && !cap) {
-      tipCard(c, CARD.x + 30, 146, ch.tip, fade(0.3, dur - 0.05), `${spCity(ch.lat) || 'TU CASA'} · ${spLat(ch.lat)} · ${ch.tilt}° · ${spDir(ch.lat, ch.azi)}`);
-      if (st.done) { const r = pvVeredicto(ch.share), A = P([10, 10, 0]); callout(c, A, -190, 70, `${Math.round(ch.share * 100)} % DEL MEJOR · ${r[1]}`, fade(SP_LEAD + SP_SWEEP, dur), SP_RC[r[2]]); }
+      tipCard(c, CARD.x + 30, 146, ch.tip, fade(0.3, dur - 0.05), `${spCity(ch.lat) || EN('TU CASA', 'YOUR HOUSE')} · ${spLat(ch.lat)} · ${ch.tilt}° · ${spDir(ch.lat, ch.azi)}`);
+      if (st.done) { const r = pvVeredicto(ch.share), A = P([10, 10, 0]); callout(c, A, -190, 70, `${Math.round(ch.share * 100)} % ${EN('DEL MEJOR', 'OF THE BEST')} · ${tr(r[1])}`, fade(SP_LEAD + SP_SWEEP, dur), SP_RC[r[2]]); }
     }
     if (cap) {
       const a = seg(st.t, TL.T.caption + 0.5, TL.T.caption + 0.9);
       TL.CH.forEach((cc, i) => {
         const r = pvVeredicto(cc.share);
-        pill(c, CARD.x + 30, 150 + i * 46, `${i + 1} · ${spCity(cc.lat) || 'TU CASA'} · ${cc.tilt}° ${spDir(cc.lat, cc.azi)} · ${Math.round(cc.share * 100)} %`, { bg: SP_RC[r[2]], size: 14, padY: 9, alpha: a * seg(st.t, TL.T.caption + 0.5 + i * 0.15, TL.T.caption + 0.8 + i * 0.15) });
+        pill(c, CARD.x + 30, 150 + i * 46, `${i + 1} · ${spCity(cc.lat) || EN('TU CASA', 'YOUR HOUSE')} · ${cc.tilt}° ${spDir(cc.lat, cc.azi)} · ${Math.round(cc.share * 100)} %`, { bg: SP_RC[r[2]], size: 14, padY: 9, alpha: a * seg(st.t, TL.T.caption + 0.5 + i * 0.15, TL.T.caption + 0.8 + i * 0.15) });
       });
     }
     if (TL.live) {
       const b = pvBest(st.lat, st.env);
-      tipCard(c, CARD.x + 30, 146, [`${spCity(st.lat) || 'Tu casa'} · ${spLat(st.lat)}: lo mejor es ${b.tilt}° ${spDir(st.lat, 0)}.`, `${spDate(st.sweep.n)} · ${spHour(st.sweep.clock)} · ▶ avanza la hora, ❚❚ la congela`], 1, 'MODO LIBRE');
+      tipCard(c, CARD.x + 30, 146, [`${spCity(st.lat) || EN('Tu casa', 'Your house')} · ${spLat(st.lat)}: ${EN('lo mejor es', 'best is')} ${b.tilt}° ${spDir(st.lat, 0)}.`, `${spDate(st.sweep.n)} · ${spHour(st.sweep.clock)} · ${EN('▶ avanza la hora, ❚❚ la congela', '▶ runs the clock, ❚❚ freezes it')}`], 1, EN('MODO LIBRE', 'FREE MODE'));
     }
   },
   drawBays(c, TL, st) {
@@ -4338,17 +4351,17 @@ const DEMO = {
     const now = st.now, sw = st.sweep;
     // BAY 01 · angle between sun and panel
     const th = now && now.up > 0 ? now.theta : null, cs = now ? now.cos * (1 - now.shade) * (1 - (now.cloudB || 0)) : 0;
-    let b = bayFrame(c, 0, 'BAY 01 · ÁNGULO SOL-PANEL', th == null ? 'NOCHE' : now.shade + (now.cloudB || 0) > 0 ? ((now.cloudB || 0) > now.shade ? 'NUBE' : 'ÁRBOL') : cs > 0.9 ? 'DE FRENTE' : cs > 0.5 ? 'DE LADO' : cs > 0 ? 'DE CANTO' : 'POR DETRÁS', th == null ? BAY_BG.grey : now.shade + (now.cloudB || 0) > 0 ? BAY_BG.coral : cs > 0.9 ? BAY_BG.lime : cs > 0.5 ? BAY_BG.amber : BAY_BG.coral);
-    bigValue(c, b, th == null ? '--' : `${Math.round(th)}°`, 'θ', 'entre el rayo y la normal del panel');
+    let b = bayFrame(c, 0, EN('BAY 01 · ÁNGULO SOL-PANEL', 'BAY 01 · SUN-PANEL ANGLE'), th == null ? EN('NOCHE', 'NIGHT') : now.shade + (now.cloudB || 0) > 0 ? ((now.cloudB || 0) > now.shade ? EN('NUBE', 'CLOUD') : EN('ÁRBOL', 'TREE')) : cs > 0.9 ? EN('DE FRENTE', 'HEAD-ON') : cs > 0.5 ? EN('DE LADO', 'AT AN ANGLE') : cs > 0 ? EN('DE CANTO', 'GRAZING') : EN('POR DETRÁS', 'FROM BEHIND'), th == null ? BAY_BG.grey : now.shade + (now.cloudB || 0) > 0 ? BAY_BG.coral : cs > 0.9 ? BAY_BG.lime : cs > 0.5 ? BAY_BG.amber : BAY_BG.coral);
+    bigValue(c, b, th == null ? '--' : `${Math.round(th)}°`, 'θ', EN('entre el rayo y la normal del panel', 'between the beam and the panel normal'));
     c.save();
     const gx = b.x + 14, gw = b.w - 28, gy = b.y + 128;
     c.fillStyle = '#f4f1ea'; rr(c, gx, gy, gw, 20, 10); c.fill(); c.lineWidth = 1.4; c.strokeStyle = INK; c.stroke();
     c.fillStyle = cs > 0.9 ? '#9bd14a' : cs > 0.5 ? '#ffb547' : '#ff6a5c'; rr(c, gx + 3, gy + 3, Math.max(0, (gw - 6) * cs), 14, 7); c.fill();
-    c.font = `400 11px ${FONT_MONO}`; c.fillStyle = '#6b6f7a'; c.fillText(`cos θ = ${cs.toFixed(2)} → capta ${Math.round(cs * 100)} % del rayo directo`, gx, gy + 44);
+    c.font = `400 11px ${FONT_MONO}`; c.fillStyle = '#6b6f7a'; c.fillText(`cos θ = ${cs.toFixed(2)} → ${EN('capta', 'takes')} ${Math.round(cs * 100)} % ${EN('del rayo directo', 'of the direct beam')}`, gx, gy + 44);
     c.restore();
     // BAY 02 · sunlight on the panel now + the day curve
-    b = bayFrame(c, 1, 'BAY 02 · LUZ EN EL PANEL', sw ? (sw.k < 0 ? `${spDate(sw.n).toUpperCase()} · ${spHour(sw.clock)}` : `${PV_DAYS[sw.k][1]} · ${spHour(sw.h)}`) : '--', sw ? BAY_BG.cyan : BAY_BG.grey);
-    bigValue(c, b, now ? String(Math.round(now.poa * 1000)) : '0', 'W/m²', sw ? `solar ${spHour(sw.h)} · reloj ${spHour(pvClock(sw.h, sw.n, st.lon, st.utc))}` : 'directa + difusa + reflejada');
+    b = bayFrame(c, 1, EN('BAY 02 · LUZ EN EL PANEL', 'BAY 02 · LIGHT ON THE PANEL'), sw ? (sw.k < 0 ? `${spDate(sw.n).toUpperCase()} · ${spHour(sw.clock)}` : `${tr(PV_DAYS[sw.k][1])} · ${spHour(sw.h)}`) : '--', sw ? BAY_BG.cyan : BAY_BG.grey);
+    bigValue(c, b, now ? String(Math.round(now.poa * 1000)) : '0', 'W/m²', sw ? `solar ${spHour(sw.h)} · ${EN('reloj', 'clock')} ${spHour(pvClock(sw.h, sw.n, st.lon, st.utc))}` : EN('directa + difusa + reflejada', 'direct + diffuse + reflected'));
     chartBox(c, b);
     if (sw) {
       const lat = st.lat, tl = Math.round(st.tilt), az = Math.round(st.azi), best = pvBest(lat, st.env).tilt;
@@ -4358,12 +4371,12 @@ const DEMO = {
       const cur = spCurve(lat, tl, az, sw.n, st.env), done = cur.filter(p => p[0] <= sw.h);
       if (done.length > 1) { c.save(); c.beginPath(); c.moveTo(X(done[0][0]), Y(0)); done.forEach(([hh, p]) => c.lineTo(X(hh), Y(p))); c.lineTo(X(done[done.length - 1][0]), Y(0)); c.closePath(); c.fillStyle = 'rgba(255,181,71,0.45)'; c.fill(); c.restore(); }
       line(cur, '#e8590c', 2);
-      pill(c, b.cx + b.cw - 6, b.cy + 6, `- - mejor ${best}°`, { align: 'right', bg: '#fffdf8', size: 9, padY: 3, padX: 6, ls: 0.5, shadow: false, lw: 1 });
+      pill(c, b.cx + b.cw - 6, b.cy + 6, `- - ${EN('mejor', 'best')} ${best}°`, { align: 'right', bg: '#fffdf8', size: 9, padY: 3, padX: 6, ls: 0.5, shadow: false, lw: 1 });
     }
     if (TL.live && SP_DATA) { spDataBays(c, st); return; }
     if (st.dataOn) { spDataBays(c, st, spVData()); return; }
     // BAY 03 · the three days, kWh/m², against the best tilt
-    b = bayFrame(c, 2, 'BAY 03 · ENERGÍA POR DÍA', 'kWh/m² · día', BAY_BG.grey);
+    b = bayFrame(c, 2, EN('BAY 03 · ENERGÍA POR DÍA', 'BAY 03 · ENERGY PER DAY'), EN('kWh/m² · día', 'kWh/m² · day'), BAY_BG.grey);
     c.save();
     const best = pvBest(st.lat, st.env).tilt, cols = PV_DAYS.length, cw = (b.w - 28) / cols;
     PV_DAYS.forEach(([n, name], i) => {
@@ -4379,8 +4392,8 @@ const DEMO = {
     c.restore();
     // BAY 04 · the year
     const show = TL.live || st.done, r = pvVeredicto(st.share), B = pvBest(st.lat, st.env);
-    b = bayFrame(c, 3, 'BAY 04 · TODO EL AÑO', show ? r[1] : st.ch ? 'CALCULANDO' : '--', show ? BAY_BG[r[2]] : BAY_BG.grey);
-    bigValue(c, b, show ? `${Math.round(st.share * 100)}` : '--', '% del mejor', show ? `${Math.round(pvYear(st.lat, Math.round(st.tilt), Math.round(st.azi), st.env))} de ${Math.round(B.E)} kWh/m²·año` : 'corre los 3 días…');
+    b = bayFrame(c, 3, EN('BAY 04 · TODO EL AÑO', 'BAY 04 · THE WHOLE YEAR'), show ? r[1] : st.ch ? EN('CALCULANDO', 'COMPUTING') : '--', show ? BAY_BG[r[2]] : BAY_BG.grey);
+    bigValue(c, b, show ? `${Math.round(st.share * 100)}` : '--', EN('% del mejor', '% of the best'), show ? `${Math.round(pvYear(st.lat, Math.round(st.tilt), Math.round(st.azi), st.env))} ${EN('de', 'of')} ${Math.round(B.E)} ${EN('kWh/m²·año', 'kWh/m²·year')}` : EN('corre los 3 días…', 'running the 3 days…'));
     c.save();
     const list = TL.live ? [] : TL.CH.slice(0, Math.max(0, st.k + (st.done ? 1 : 0)));
     const bw = (b.w - 28 - 4 * 6) / 5;
@@ -4392,21 +4405,21 @@ const DEMO = {
     }
     if (TL.live) { c.textAlign = 'left'; c.font = `400 11.5px ${FONT_MONO}`; c.fillStyle = '#6b6f7a'; {
       const e = st.env, clear = pvYear(st.lat, Math.round(st.tilt), Math.round(st.azi)), lose = (1 - pvYear(st.lat, Math.round(st.tilt), Math.round(st.azi), e) / clear) * 100;
-      c.fillText(`mejor con este cielo: ${B.tilt}° ${spDir(st.lat, 0).toLowerCase()}`, b.x + 14, b.y + 140);
-      c.fillText(`nubes ${Math.round(e.cloud * 100)} % · árbol ${e.tree ? e.tree + ' m a ' + Math.hypot(e.tx, e.ty).toFixed(1) + ' m' : 'no'}`, b.x + 14, b.y + 160);
-      c.fillText(`pierdes ${lose.toFixed(1)} % frente a cielo limpio`, b.x + 14, b.y + 180);
+      c.fillText(`${EN('mejor con este cielo', 'best with this sky')}: ${B.tilt}° ${spDir(st.lat, 0).toLowerCase()}`, b.x + 14, b.y + 140);
+      c.fillText(`${EN('nubes', 'clouds')} ${Math.round(e.cloud * 100)} % · ${EN('árbol', 'tree')} ${e.tree ? e.tree + EN(' m a ', ' m at ') + Math.hypot(e.tx, e.ty).toFixed(1) + ' m' : 'no'}`, b.x + 14, b.y + 160);
+      c.fillText(EN(`pierdes ${lose.toFixed(1)} % frente a cielo limpio`, `you lose ${lose.toFixed(1)} % against a clear sky`), b.x + 14, b.y + 180);
     } }
     c.restore();
   },
   speedBadge(TL, st) {
-    if (TL.live) return playing ? { txt: `▶ ${SP_RATE} h POR SEGUNDO`, bg: BAY_BG.coral } : { txt: '❚❚ EN PAUSA', bg: BAY_BG.lime };
-    if (st.extra === 'nube') return { txt: `NUBES ${Math.round(st.envNow.cloud * 100)} % · SOMBRA EN VIVO`, bg: BAY_BG.cyan };
-    if (st.extra === 'inv') return st.eu < SPI.load ? { txt: 'DATOS DEL INVERSOR', bg: BAY_BG.cyan } : st.eu < SPI.apply + 1.3 ? { txt: 'NO COINCIDE', bg: BAY_BG.amber } : { txt: 'COINCIDE', bg: BAY_BG.lime };
-    if (!st.ch) return st.placedCount < TL.total ? { txt: 'ARMANDO', bg: BAY_BG.amber } : { txt: 'LISTO', bg: BAY_BG.lime };
-    if (st.t >= TL.T.caption) return { txt: '5 POSICIONES · 1 REGLA', bg: BAY_BG.lime };
-    if (st.sweep) return { txt: '1 DÍA = 2.6 s · ADELANTADO', bg: BAY_BG.coral };
+    if (TL.live) return playing ? { txt: `▶ ${SP_RATE} h ${EN('POR SEGUNDO', 'PER SECOND')}`, bg: BAY_BG.coral } : { txt: EN('❚❚ EN PAUSA', '❚❚ PAUSED'), bg: BAY_BG.lime };
+    if (st.extra === 'nube') return { txt: EN(`NUBES ${Math.round(st.envNow.cloud * 100)} % · SOMBRA EN VIVO`, `CLOUDS ${Math.round(st.envNow.cloud * 100)} % · LIVE SHADE`), bg: BAY_BG.cyan };
+    if (st.extra === 'inv') return st.eu < SPI.load ? { txt: EN('DATOS DEL INVERSOR', 'INVERTER DATA'), bg: BAY_BG.cyan } : st.eu < SPI.apply + 1.3 ? { txt: EN('NO COINCIDE', 'NO MATCH'), bg: BAY_BG.amber } : { txt: EN('COINCIDE', 'MATCHES'), bg: BAY_BG.lime };
+    if (!st.ch) return st.placedCount < TL.total ? { txt: EN('ARMANDO', 'BUILDING'), bg: BAY_BG.amber } : { txt: EN('LISTO', 'READY'), bg: BAY_BG.lime };
+    if (st.t >= TL.T.caption) return { txt: EN('5 POSICIONES · 1 REGLA', '5 POSITIONS · 1 RULE'), bg: BAY_BG.lime };
+    if (st.sweep) return { txt: EN('1 DÍA = 2.6 s · ADELANTADO', '1 DAY = 2.6 s · FAST-FORWARD'), bg: BAY_BG.coral };
     if (st.done) { const r = pvVeredicto(st.ch.share); return { txt: r[1], bg: BAY_BG[r[2]] }; }
-    return { txt: 'GIRANDO EL PANEL', bg: BAY_BG.amber };
+    return { txt: EN('GIRANDO EL PANEL', 'TURNING THE PANEL'), bg: BAY_BG.amber };
   },
   audioCues(TL) {
     if (TL.live) return [];
@@ -4428,6 +4441,12 @@ const DEMO = {
     return cu;
   },
 };
+// the note under the stage (demo.json is in Spanish); English version for ?lang=en
+const SP_NOTE_EN = "Data: sun position from Cooper's declination (1969) and the hour angle (15° per hour), sunrise and sunset from the sunrise equation (PVEducation, 'Solar Time' and 'Elevation Angle'). Clear-sky direct light DNI = 1.353 · 0.7^(AM^0.678) kW/m² (Meinel and Meinel 1976, via PVEducation 'Air Mass'), air mass from Kasten and Young (1989). Diffuse ≈ 10 % of direct on a clear day (PVEducation). Rule of thumb: the best fixed angle faces the equator with a tilt close to the latitude, a bit less with clouds (Jacobson and Jadhav 2018, Solar Energy 169: 55-66). Clouds: global light drops as 1 − 0.75·C^3.4 with C = covered fraction of the sky (Kasten and Czeplak 1980). Clock time = solar time − (4·(longitude − 15·zone) + equation of time)/60 min (PVEducation, 'Solar Time'). Model assumptions: the chapters use a clear sky; with the CLOUDS knob the cover is a fixed year-round average and the diffuse share grows as d0 + (1 − d0)·C²; the tree is a sphere (crown radius 0.35 H centred at 0.65 H) you drag in the scene; direct light drops in proportion to the shaded part of the panel (12 sample points, no extra bypass-diode losses); live clouds are disks drifting with the wind at 22 m so they fit in the scene (real ones are 1-2 km up, but the shadow is the same projection along the sun ray) and their amount follows 1 − e^(−density) so the knob % is the % of time in shade; scene shadows come from projecting each object along the current sun ray; no neighbouring buildings; scene scale 1 unit = 0.4 m, panel centre 6.8 m up; integration every 4 days and every 15 min. Hand check: at 37.3° S, June 21 at noon, the sun is 29.3° high; with the panel at 37° facing north the beam arrives θ = 23.7° from the normal. In this model the best fixed angle at 37.3° S is 33° facing north (PVGIS and the rule of thumb give similar values, about 32-35°). Against that best: flat 87 %, vertical 63 %, 35° facing south 50 %, 25° turned 20° west 98 %. One day lasts 2.6 s on screen. House and panel are our own design. Inverter data: the CSV is read as local date and time plus power (kW or W). The diagnosis uses the clearest days (the 40 % with the most energy against a clear sky) and tries tilts from 0 to 70° and turns of ±90°: real power is compared with clear-sky light on the panel times the heat loss (−0.35 %/°C, cell = 20 °C + 25 °C per kW/m², assumption), with trimmed least squares (the 30 % of samples furthest below are dropped, because shade and clouds only lower the power). The expected curve also uses 86 % efficiency for wiring and inverter (assumption). Check: on the simulated CSV (truth 25° and 20° west) it estimates 26° and 19° and finds the tree's shade from 16:30 to 18:30. Location: free mode takes the browser's time zone (longitude ≈ 15° per hour) and, if you allow it, the latitude and longitude from geolocation; the simulated CSV is generated for that location. The guided video uses an example site at 37.3° S, 59.1° W, UTC−3.";
+if (typeof window !== 'undefined' && LANG === 'en') window.addEventListener('load', () => {
+  const n = document.getElementById('note'); if (n) n.textContent = SP_NOTE_EN;
+  document.title = 'SIMULAB · SOLAR PANEL';
+});
 
 // ==== kit/main.js
 // ---------------------------------------------------------------------------
