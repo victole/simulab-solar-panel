@@ -1,4 +1,4 @@
-# SIMULAB · Panel solar en Tandil
+# SIMULAB · Panel solar
 
 ¿Hacia dónde y cuánto inclinar un panel solar en una casa? Este simulador calcula la posición del sol para cualquier lugar y momento. Muestra cuánta luz recibe el panel, con las sombras de un árbol y de las nubes. También compara lo teórico con lo que midió el inversor y estima cómo está montado el panel en realidad.
 
@@ -6,13 +6,15 @@
 
 Es un solo archivo, `index.html`, y funciona sin internet.
 
+**Ubicación.** Al abrir, la app toma el huso horario del navegador y estima la longitud (15° por hora). Si permites la ubicación, usa tu latitud y longitud reales. Siempre se pueden cambiar a mano en el panel izquierdo.
+
 ## Qué se puede hacer
 
 - **Modo libre.** Elige fecha, hora, latitud, longitud, inclinación, giro, nubes y árbol desde el panel izquierdo. La app arranca en pausa; ▶ hace avanzar la hora y ❚❚ la congela. Mover una perilla no pone la animación en Play.
 - **Árbol arrastrable.** Su sombra sigue al sol y baja la potencia cuando tapa el panel.
 - **Nubes que viajan con el viento** y proyectan sombra sobre el suelo, el techo y el panel.
 - **Video guiado** en los botones de abajo: plano, vertical, al sur, ángulo justo y tu techo. Después, *Nubes* muestra cómo se usa el panel de configuración, e *Inversor* carga el CSV simulado y corrige la orientación con el diagnóstico.
-- **Datos del inversor.** *Importar CSV…* o *Cargar CSV simulado* dibuja la curva real contra la teórica y estima la inclinación, el giro y las horas de sombra fija.
+- **Datos del inversor.** *Importar CSV…* o *Cargar CSV simulado* (generado para tu ubicación) dibuja la curva real contra la teórica y estima la inclinación, el giro y las horas de sombra fija.
 
 ## Formato del CSV
 
@@ -20,9 +22,9 @@ Una fila por medición. La fecha y hora es la hora local y la potencia puede est
 
 | Archivo | Para qué |
 |---|---|
-| `tandil-simulado-2026-11.csv` | 14 días cada 5 min, formato simple |
-| `tandil-prueba-formato-2.csv` | los mismos datos con `;`, coma decimal y W |
-| `tandil-simulado-verdad.json` | la orientación y el árbol reales escondidos en el CSV, para comprobar el diagnóstico |
+| `simulado-2026-11.csv` | 14 días cada 5 min, formato simple, para un sitio de ejemplo a 37.3° S |
+| `prueba-formato-2.csv` | los mismos datos con `;`, coma decimal y W |
+| `simulado-verdad.json` | la orientación y el árbol reales escondidos en el CSV, para comprobar el diagnóstico |
 
 Son **datos simulados**, no vienen de un inversor real.
 
@@ -30,11 +32,10 @@ Son **datos simulados**, no vienen de un inversor real.
 
 ```
 index.html        la app armada (lo que se publica)
-model.js          modelo puro: sol, luz, nubes, árbol, CSV y diagnóstico
+model.js          modelo puro: sol, luz, nubes, árbol, CSV, diagnóstico y CSV simulado
 demo.js           escena, paneles, controles y panel lateral
 demo.json         título y nota con fuentes y supuestos
-sim-data.js       el CSV simulado incluido en la app (generado)
-simular-csv.mjs   genera data/*.csv, data/*.json y sim-data.js
+simular-csv.mjs   genera data/*.csv y data/*.json
 check.mjs         comprobaciones rápidas del modelo
 build.sh          arma index.html
 data/             CSV de prueba

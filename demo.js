@@ -15,7 +15,7 @@ const SP_COL = {
 // east = -y (upper right), north = -x, west = +y. South hemisphere: turned 180° so the equator stays at +x.
 // The engine mirrors the world (VR), so this left-handed map reads correctly on screen.
 function enuW(v, hemi) { return [-v[1] * hemi, -v[0] * hemi, v[2]]; }
-const SP_CITIES = [[0, 'QUITO'], [4.7, 'BOGOTÁ'], [10.5, 'CARACAS'], [-12, 'LIMA'], [19.4, 'CDMX'], [23.1, 'LA HABANA'], [25.7, 'MONTERREY'], [-33.4, 'SANTIAGO'], [-34.6, 'BUENOS AIRES'], [-37.3, 'TANDIL'], [40.4, 'MADRID'], [52.5, 'BERLÍN'], [59.9, 'OSLO']];
+const SP_CITIES = [[0, 'QUITO'], [4.7, 'BOGOTÁ'], [10.5, 'CARACAS'], [-12, 'LIMA'], [19.4, 'CDMX'], [23.1, 'LA HABANA'], [25.7, 'MONTERREY'], [-33.4, 'SANTIAGO'], [-34.6, 'BUENOS AIRES'], [40.4, 'MADRID'], [52.5, 'BERLÍN'], [59.9, 'OSLO']];
 const spCity = (lat) => { const c = SP_CITIES.find(c => Math.abs(c[0] - lat) <= 1.5); return c ? c[1] : null; };
 const spLat = (lat) => `${Math.abs(lat).toFixed(Math.abs(lat) % 1 ? 1 : 0)}° ${lat >= 0 ? 'N' : 'S'}`;
 function spDir(lat, azi) {
@@ -106,7 +106,8 @@ const SP_LEAD = 1.2, SP_DAYV = 2.6, SP_HOLD = 2.8, SP_SWEEP = SP_DAYV * PV_DAYS.
 const SP_NUBE_D = 11, SP_INV_D = 15;
 const SPN = { drag0: 1.6, drag1: 4.0, cloud: 0.6, out: SP_NUBE_D - 0.6 };
 const SPI = { load: 1.7, sweep0: 2.0, sweep1: 8.0, apply: 9.2, out: SP_INV_D - 0.6, n: 309, h0: 6.5, h1: 17.5, tilt0: 33, azi0: 0 };
-const SP_VTREE = { tree: 11, tx: -7, ty: -2.5 };   // the tree hidden in the simulated CSV (data/tandil-simulado-verdad.json)
+const SP_VTREE = { tree: 11, tx: -7, ty: -2.5 };   // the tree hidden in the simulated CSV (model.js PV_SIM)
+const SP_EJ = { lat: -37.3, lon: -59.1, utc: -3 };  // example site for the guided video (the free mode uses the browser's location)
 
 function spInsts() {
   return [
@@ -153,7 +154,7 @@ function spState(TL, t) {
     st.free = { n, h: solar, clock, k: PV_DAYS.findIndex(d => d[0] === n), f: 0 };
   } else if (t >= TL.T.nube0 && t < TL.T.segEnd) {
     // chapters 6 and 7: a fixed day, the clock moves; the year stats stay on a clear sky (env), the scene gets envX
-    const inv = t >= TL.T.inv0, e = t - (inv ? TL.T.inv0 : TL.T.nube0); k = TL.CH.length - 1; lat = -37.3;
+    const inv = t >= TL.T.inv0, e = t - (inv ? TL.T.inv0 : TL.T.nube0); k = TL.CH.length - 1; ({ lat, lon, utc } = SP_EJ);
     let n, clock;
     if (!inv) { tilt = 25; azi = 20; n = SPI.n; clock = lerp(11, 13, e / SP_NUBE_D); st.envX = { cloud: SPN.cloud * easeInOut(seg(e, SPN.drag0, SPN.drag1)) * (1 - easeInOut(seg(e, SPN.out - 0.4, SP_NUBE_D))) }; }
     else {
@@ -223,7 +224,7 @@ function spMakeData(text, name) {
   return { name, rows, byN, diag: null, siteKey: '' };
 }
 let SP_VDATA = null;   // the simulated CSV as the guided video shows it
-const spVData = () => SP_VDATA || (SP_VDATA = spMakeData(SP_SIM_CSV, 'tandil-simulado-2026-11.csv'));
+const spVData = () => SP_VDATA || (SP_VDATA = spMakeData(pvSimExport(SP_EJ).csv, 'simulado-2026-11.csv'));
 function spLoadCSV(text, name) {
   SP_DATA = spMakeData(text, name); const rows = SP_DATA.rows;
   spDataStatus();
@@ -292,11 +293,10 @@ function spDataPanel(box) {
   const fail = (e) => { $('datastatus').textContent = 'No pude leer el archivo: ' + e.message; };
   $('dataimport').onclick = () => $('datafile').click();
   $('datafile').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { spLoadCSV(await f.text(), f.name); } catch (err) { fail(err); } e.target.value = ''; };
-  $('datasim').onclick = () => { try { spLoadCSV(SP_SIM_CSV, 'tandil-simulado-2026-11.csv (simulado)'); } catch (err) { fail(err); } };
+  $('datasim').onclick = () => { try { const s = SP_LAST; spLoadCSV(pvSimExport({ lat: s.lat, lon: s.lon, utc: s.utc }).csv, `simulado para ${spLat(s.lat)} (no son datos reales)`); } catch (err) { fail(err); } };
   $('dataapply').onclick = () => {
     const d = SP_DATA && SP_DATA.diag; if (!d) return;
-    const ins = document.querySelectorAll('.knob');
-    DEMO.knobs.forEach((k, i) => { if (k.key !== 'tilt' && k.key !== 'azi') return; const v = k.key === 'tilt' ? d.tilt : d.azi; ins[i].querySelector('input').value = v; PARAMS[k.key] = v; ins[i].querySelector('span.v').textContent = k.fmt(v); liveSet(k.key, v); });
+    spKnob('tilt', d.tilt); spKnob('azi', d.azi);
   };
   $('dataclear').onclick = () => { SP_DATA = null; spDataStatus(); };
   SP_BOX = w; spDataStatus();
@@ -325,7 +325,7 @@ function spMock(c, st) {
     head('DATOS DEL INVERSOR');
     button('imp', 'Importar CSV…', true, false);
     button('sim', 'Cargar CSV simulado', true, Math.abs(e - SPI.load) < 0.2);
-    if (st.dataOn) { const d = st.diag; text('tandil-simulado-2026-11.csv', true); text('2702 filas · 14 días'); text(`Orientación estimada: ${d.tilt}° · ${spDeg(d.azi)}`, true); text(`Sombra fija: ${d.shade.map(spWin).join(', ')}`); y += 8; }
+    if (st.dataOn) { const d = st.diag; text('simulado-2026-11.csv', true); text('2702 filas · 14 días'); text(`Orientación estimada: ${d.tilt}° · ${spDeg(d.azi)}`, true); text(`Sombra fija: ${d.shade.map(spWin).join(', ')}`); y += 8; }
     button('apply', 'Usar orientación estimada', st.dataOn, Math.abs(e - SPI.apply) < 0.2);
   }
   const h = y - y0 + 6;
@@ -538,11 +538,26 @@ if (typeof window !== 'undefined' && !new URLSearchParams(location.search).has('
   liveSet = (key, v) => { const was = playing; set0(key, v); playing = was; };
   liveStart = () => { start0(); playing = false; };
   liveStart();      // the app opens on the free mode, paused; the guided video is in the chapter buttons below
+  spLocate();
 });
+// set a knob as if the viewer moved it (slider, label, PARAMS, live event)
+function spKnob(key, v) {
+  const i = DEMO.knobs.findIndex(k => k.key === key), k = DEMO.knobs[i], el = document.querySelectorAll('.knob')[i];
+  v = clamp(Math.round(v / k.step) * k.step, k.min, k.max); PARAMS[key] = v;
+  if (el) { el.querySelector('input').value = v; el.querySelector('span.v').textContent = k.fmt(v); }
+  liveSet(key, v);
+}
+// where the viewer is: the time zone right away (UTC offset, longitude ≈ 15° per hour), then the browser's
+// location if they allow it. ponytail: no latitude without permission; the knob keeps its default.
+function spLocate() {
+  const utc = -new Date().getTimezoneOffset() / 60;
+  spKnob('utc', utc); spKnob('lon', utc * 15);
+  if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => { spKnob('lat', p.coords.latitude); spKnob('lon', p.coords.longitude); }, () => {}, { maximumAge: 864e5, timeout: 15000 });
+}
 
 const DEMO = {
   id: 'PANEL', num: '05', title: 'PANEL SOLAR', tagline: 'ORIENTA · INCLINA · COSECHA', category: 'ENERGÍA', brand: 'SIMULAB',
-  plate: ['SIMULAB · PANEL SOLAR', 'hacia dónde y cuánto inclinar tu panel en Tandil'],
+  plate: ['SIMULAB · PANEL SOLAR', 'hacia dónde y cuánto inclinar tu panel'],
   chips: ['SOL CALCULADO · 3 DÍAS CLAVE · AÑO COMPLETO', 'ENERGÍA'],
   caption: 'Apunta al ecuador e inclínalo casi tu latitud.',
   intro: { seconds: 5, lines: ['¿Hacia dónde y cuánto se inclina', 'tu panel solar?'], pill: 'PANEL SOLAR' },
@@ -622,14 +637,14 @@ const DEMO = {
       tipCard(c, CARD.x + 30, 146, tip, a, st.extra === 'nube' ? 'PANEL DE CONFIGURACIÓN' : 'DATOS DEL INVERSOR');
     }
     if (ch && !cap) {
-      tipCard(c, CARD.x + 30, 146, ch.tip, fade(0.3, dur - 0.05), `${spCity(ch.lat)} · ${spLat(ch.lat)} · ${ch.tilt}° · ${spDir(ch.lat, ch.azi)}`);
+      tipCard(c, CARD.x + 30, 146, ch.tip, fade(0.3, dur - 0.05), `${spCity(ch.lat) || 'TU CASA'} · ${spLat(ch.lat)} · ${ch.tilt}° · ${spDir(ch.lat, ch.azi)}`);
       if (st.done) { const r = pvVeredicto(ch.share), A = P([10, 10, 0]); callout(c, A, -190, 70, `${Math.round(ch.share * 100)} % DEL MEJOR · ${r[1]}`, fade(SP_LEAD + SP_SWEEP, dur), SP_RC[r[2]]); }
     }
     if (cap) {
       const a = seg(st.t, TL.T.caption + 0.5, TL.T.caption + 0.9);
       TL.CH.forEach((cc, i) => {
         const r = pvVeredicto(cc.share);
-        pill(c, CARD.x + 30, 150 + i * 46, `${i + 1} · ${spCity(cc.lat)} · ${cc.tilt}° ${spDir(cc.lat, cc.azi)} · ${Math.round(cc.share * 100)} %`, { bg: SP_RC[r[2]], size: 14, padY: 9, alpha: a * seg(st.t, TL.T.caption + 0.5 + i * 0.15, TL.T.caption + 0.8 + i * 0.15) });
+        pill(c, CARD.x + 30, 150 + i * 46, `${i + 1} · ${spCity(cc.lat) || 'TU CASA'} · ${cc.tilt}° ${spDir(cc.lat, cc.azi)} · ${Math.round(cc.share * 100)} %`, { bg: SP_RC[r[2]], size: 14, padY: 9, alpha: a * seg(st.t, TL.T.caption + 0.5 + i * 0.15, TL.T.caption + 0.8 + i * 0.15) });
       });
     }
     if (TL.live) {

@@ -209,3 +209,29 @@ function pvDiagnose(rows, site) {
   }
   return Object.assign(best, { days: days.length, clearDays: [...clear], shade, samples: S.length });
 }
+// SIMULATED inverter export (not real data): every 5 min, 1-14 Nov 2026, for any site {lat, lon, utc}. Same sun,
+// tree and clouds as the app, plus what a real roof adds: wrong mounting, dirt, heat, inverter limit.
+// The app makes it for the viewer's location; simular-csv.mjs writes the same thing to data/ for the checks.
+const PV_SIM = {
+  plant: { kWp: 5.5, acMax: 5.0, pr: 0.86, gamma: -0.0035, tAmb: 18, kT: 25 },  // 10 × 550 W, 5 kW inverter; pr, tAmb, kT: assumptions
+  truth: { tilt: 25, azi: 20, soiling: 0.06, tree: { height_m: 11, east_m: -7, north_m: -2.5 } },  // what the "installer" did; tree to the west, a bit toward the pole
+  covers: [0, 0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9],                                // daily cloud cover drawn from this list (assumption)
+};
+function pvSimExport(site) {
+  const { plant: P, truth: T, covers } = PV_SIM, START = Date.UTC(2026, 10, 1), STEP = 5, R = pvRand(2026);
+  const rows = ['fecha_hora,potencia_kW,energia_dia_kWh'], days = [];
+  for (let d = 0; d < 14; d++) {
+    const n = 305 + d, cover = covers[Math.floor(R() * covers.length)];
+    const env = { cloud: cover, tree: T.tree.height_m, tx: T.tree.east_m, ty: T.tree.north_m * (site.lat >= 0 ? -1 : 1) }; // north_m is for the south hemisphere: keep the tree on the pole side
+    let E = 0;
+    for (let m = 5 * 60; m <= 21 * 60; m += STEP) {
+      const solar = m / 60 + (4 * (site.lon - 15 * site.utc) + pvEoT(n)) / 60;
+      const g = pvNow(site.lat, T.tilt, T.azi, n, solar, env, (d * 86400 + m * 60) / 120).poa * (1 - T.soiling) * (1 - 0.3 * cover); // thick days also dim the diffuse light (assumption)
+      const p = Math.min(P.acMax, Math.max(0, g * P.kWp * P.pr * (1 + P.gamma * (P.tAmb + P.kT * g - 25))));
+      E += p * STEP / 60;
+      rows.push(`${new Date(START + d * 86400000 + m * 60000).toISOString().slice(0, 16).replace('T', ' ')},${p.toFixed(3)},${E.toFixed(2)}`);
+    }
+    days.push({ fecha: new Date(START + d * 86400000).toISOString().slice(0, 10), nubes: cover, kWh: +E.toFixed(2) });
+  }
+  return { csv: rows.join('\n'), days };
+}
