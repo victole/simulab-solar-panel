@@ -43,4 +43,5 @@ node simular-csv.mjs  # regenerate data/ (the app makes its own simulated CSV)
 
 - Repo: `git@github.com:victole/simulab-solar-panel.git`, branch `main`. Commits use `victole@gmail.com`.
 - Vercel is connected to the repo: every push to `main` deploys https://simulab-solar-panel.vercel.app as a static `index.html`. Vercel runs no build step, so run `./build.sh` before committing.
+- `build.sh` adds the Vercel Web Analytics script to `index.html` (not to `dist/`). Analytics must be enabled in the Vercel project.
 - `render/` (video and audio), `dist/` and `shots/` are git-ignored, because they are large or regenerated.
